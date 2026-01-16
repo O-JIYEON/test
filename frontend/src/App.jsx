@@ -1,39 +1,69 @@
-const menuItems = Array.from({ length: 7 }, (_, index) => `메뉴 ${index + 1}`);
+import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+
+const menuItems = [
+  { label: '대시보드', path: '/dashboard' },
+  { label: '프로젝트 관리', path: '/projects' },
+  { label: '영업', path: '/sales' },
+  { label: '기간1', path: '/period-1' },
+  { label: '기간2', path: '/period-2' },
+  { label: '기간3', path: '/period-3' },
+  { label: '설정', path: '/settings' },
+];
+
+function MenuPage({ title }) {
+  return (
+    <>
+      <header className="content__header">
+        <h2>{title}</h2>
+        <p>현재 보고 있는 화면은 {title} 입니다.</p>
+      </header>
+      <section className="content__section">
+        <div className="content__card">
+          <h3>{title} 개요</h3>
+          <p>{title} 관련 주요 정보를 이곳에서 확인할 수 있습니다.</p>
+        </div>
+        <div className="content__card">
+          <h3>{title} 진행 현황</h3>
+          <p>{title}에서 진행 중인 항목을 빠르게 살펴보세요.</p>
+        </div>
+        <div className="content__card">
+          <h3>{title} 관리</h3>
+          <p>{title} 화면의 설정과 관리 도구를 확인하세요.</p>
+        </div>
+      </section>
+    </>
+  );
+}
 
 function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <h1 className="sidebar__title">영업 관리</h1>
+        <h1 className="sidebar__title">메뉴</h1>
         <nav className="sidebar__nav">
           <ul>
             {menuItems.map((item) => (
-              <li key={item} className="sidebar__item">
-                {item}
+              <li key={item.path} className="sidebar__item">
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `sidebar__link${isActive ? ' sidebar__link--active' : ''}`
+                  }
+                >
+                  {item.label}
+                </NavLink>
               </li>
             ))}
           </ul>
         </nav>
       </aside>
       <main className="content">
-        <header className="content__header">
-          <h2>대시보드</h2>
-          <p>메뉴를 선택하면 해당 영업 관리 내용을 이 영역에서 확인할 수 있습니다.</p>
-        </header>
-        <section className="content__section">
-          <div className="content__card">
-            <h3>오늘의 요약</h3>
-            <p>신규 리드, 진행 중인 계약, 예정된 미팅을 한눈에 확인하세요.</p>
-          </div>
-          <div className="content__card">
-            <h3>이번 주 목표</h3>
-            <p>주간 매출 목표와 달성률을 관리하는 영역입니다.</p>
-          </div>
-          <div className="content__card">
-            <h3>담당자 현황</h3>
-            <p>팀별 담당자의 활동 및 성과를 확인할 수 있습니다.</p>
-          </div>
-        </section>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {menuItems.map((item) => (
+            <Route key={item.path} path={item.path} element={<MenuPage title={item.label} />} />
+          ))}
+        </Routes>
       </main>
     </div>
   );
