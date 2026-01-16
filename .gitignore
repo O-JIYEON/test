@@ -10,3 +10,7 @@
 # frontend
 frontend/node_modules
 frontend/pnpm-lock.yaml
+
+# backend
+backend/node_modules
+backend/pnpm-lock.yaml

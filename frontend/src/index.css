@@ -167,6 +167,91 @@ ul {
   box-shadow: 0 8px 16px rgba(56, 189, 248, 0.3);
 }
 
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-actions__reset {
+  border: none;
+  background: transparent;
+  color: #52606d;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.table__wrapper {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.data-table th {
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.table__status {
+  margin-top: 12px;
+  color: #52606d;
+}
+
+.table__status--error {
+  color: #dc2626;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-button {
+  border: none;
+  background: #e2e8f0;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.icon-button:hover {
+  background: #cbd5f5;
+  transform: translateY(-1px);
+}
+
+.icon-button--danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.icon-button--danger:hover {
+  background: #fecaca;
+}
+
 @media (max-width: 900px) {
   .app {
     grid-template-columns: 1fr;
