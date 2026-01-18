@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom';
 function Sidebar({ menuItems }) {
   return (
     <aside className="sidebar">
-      <h1 className="sidebar__title">메뉴</h1>
       <nav className="sidebar__nav">
         <ul>
           {menuItems.map((item) => (

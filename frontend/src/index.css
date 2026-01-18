@@ -1,7 +1,7 @@
 :root {
   font-family: 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
-  color: #1f2933;
-  background-color: #f5f7fb;
+  color: #e2e8f0;
+  background-color: #0b1120;
 }
 
 * {
@@ -19,18 +19,28 @@ ul {
 }
 
 .app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+.app__body {
   display: grid;
   grid-template-columns: 260px 1fr;
-  min-height: 100vh;
+  gap: 0;
+  flex: 1;
 }
 
 .sidebar {
   background: #0f172a;
-  color: #f8fafc;
+  color: #e2e8f0;
   padding: 32px 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  border-right: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .sidebar__title {
@@ -55,22 +65,64 @@ ul {
   width: 100%;
   padding: 12px 16px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(148, 163, 184, 0.16);
   transition: background 0.2s ease, color 0.2s ease;
   font-weight: 600;
 }
 
 .sidebar__link:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(148, 163, 184, 0.28);
 }
 
 .sidebar__link--active {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.18);
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.28);
 }
 
 .content {
-  padding: 40px;
+  padding: 24px;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #0f172a;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-header__logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: #6d28d9;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.app-header__text h1 {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+  color: #f8fafc;
+}
+
+.app-header__text p {
+  font-size: 0.85rem;
+  color: #cbd5f5;
+  font-weight: 600;
 }
 
 .content__header {
@@ -83,7 +135,7 @@ ul {
 }
 
 .content__header p {
-  color: #52606d;
+  color: #94a3b8;
 }
 
 .content__section {
@@ -97,10 +149,10 @@ ul {
 }
 
 .content__card {
-  background: #ffffff;
+  background: #111827;
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.45);
 }
 
 .content__card--form {
@@ -113,7 +165,7 @@ ul {
 }
 
 .content__card p {
-  color: #5f6c7b;
+  color: #94a3b8;
   line-height: 1.5;
 }
 
@@ -129,14 +181,16 @@ ul {
   flex-direction: column;
   gap: 8px;
   font-weight: 600;
-  color: #1f2933;
+  color: #e2e8f0;
 }
 
 .project-form input,
 .project-form textarea {
   width: 100%;
   border-radius: 10px;
-  border: 1px solid #d7dde5;
+  border: 1px solid #334155;
+  background: #0b1120;
+  color: #e2e8f0;
   padding: 12px 14px;
   font-size: 0.95rem;
   font-family: inherit;
@@ -146,8 +200,8 @@ ul {
 .project-form input:focus,
 .project-form textarea:focus {
   outline: none;
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+  border-color: #7dd3fc;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
 }
 
 .project-form__submit {
@@ -176,7 +230,7 @@ ul {
 .form-actions__reset {
   border: none;
   background: transparent;
-  color: #52606d;
+  color: #94a3b8;
   font-weight: 600;
   cursor: pointer;
 }
@@ -196,21 +250,21 @@ ul {
 .data-table td {
   padding: 10px 12px;
   text-align: left;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #1f2937;
 }
 
 .data-table th {
-  background: #f8fafc;
+  background: #111827;
   font-weight: 700;
 }
 
 .table__status {
   margin-top: 12px;
-  color: #52606d;
+  color: #94a3b8;
 }
 
 .table__status--error {
-  color: #dc2626;
+  color: #f87171;
 }
 
 .table-actions {
@@ -221,8 +275,8 @@ ul {
 
 .icon-button {
   border: none;
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #1f2937;
+  color: #e2e8f0;
   border-radius: 8px;
   padding: 6px;
   cursor: pointer;
@@ -239,21 +293,21 @@ ul {
 }
 
 .icon-button:hover {
-  background: #cbd5f5;
+  background: #334155;
   transform: translateY(-1px);
 }
 
 .icon-button--danger {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
 }
 
 .icon-button--danger:hover {
-  background: #fecaca;
+  background: rgba(248, 113, 113, 0.35);
 }
 
 @media (max-width: 900px) {
-  .app {
+  .app__body {
     grid-template-columns: 1fr;
   }
 
