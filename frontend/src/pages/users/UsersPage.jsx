@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -7,6 +8,12 @@ function UsersPage() {
   const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('loading');
   const [formStatus, setFormStatus] = useState('');
+  const [sortState, setSortState] = useState({ key: null, direction: null });
+  const [confirmState, setConfirmState] = useState({
+    open: false,
+    message: '',
+    onConfirm: null
+  });
 
   const editableColumns = columns.filter((column) => !column.isAutoIncrement);
   const idColumn = columns.find((column) => column.name === 'id')?.name || 'id';
@@ -65,8 +72,7 @@ function UsersPage() {
     setFormStatus('');
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const submitUser = async () => {
     setFormStatus('saving');
     try {
       const response = await fetch(
@@ -90,6 +96,18 @@ function UsersPage() {
     }
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setConfirmState({
+      open: true,
+      message: editingId ? '사용자 정보를 수정하시겠습니까?' : '사용자를 등록하시겠습니까?',
+      onConfirm: () => {
+        submitUser();
+        setConfirmState({ open: false, message: '', onConfirm: null });
+      }
+    });
+  };
+
   const handleEdit = (user) => {
     setEditingId(user[idColumn]);
     const nextData = editableColumns.reduce((acc, column) => {
@@ -100,7 +118,7 @@ function UsersPage() {
     setFormStatus('');
   };
 
-  const handleDelete = async (user) => {
+  const deleteUser = async (user) => {
     const userId = user[idColumn];
     if (!userId) {
       return;
@@ -118,6 +136,68 @@ function UsersPage() {
       console.error(error);
     }
   };
+
+  const handleDelete = (user) => {
+    const userId = user[idColumn];
+    if (!userId) {
+      return;
+    }
+    setConfirmState({
+      open: true,
+      message: '사용자를 삭제하시겠습니까?',
+      onConfirm: () => {
+        deleteUser(user);
+        setConfirmState({ open: false, message: '', onConfirm: null });
+      }
+    });
+  };
+
+  const handleConfirmCancel = () => {
+    setConfirmState({ open: false, message: '', onConfirm: null });
+  };
+
+  const handleSort = (key) => {
+    setSortState((prev) => {
+      if (prev.key !== key) {
+        return { key, direction: 'asc' };
+      }
+      if (prev.direction === 'asc') {
+        return { key, direction: 'desc' };
+      }
+      if (prev.direction === 'desc') {
+        return { key: null, direction: null };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const sortedUsers = (() => {
+    if (!sortState.key || !sortState.direction) {
+      return users;
+    }
+    const sorted = [...users];
+    const directionFactor = sortState.direction === 'asc' ? 1 : -1;
+    sorted.sort((left, right) => {
+      const leftValue = left[sortState.key];
+      const rightValue = right[sortState.key];
+      if (leftValue === null || leftValue === undefined) {
+        return 1;
+      }
+      if (rightValue === null || rightValue === undefined) {
+        return -1;
+      }
+      if (typeof leftValue === 'number' && typeof rightValue === 'number') {
+        return (leftValue - rightValue) * directionFactor;
+      }
+      return String(leftValue).localeCompare(String(rightValue), 'ko-KR', {
+        numeric: true,
+        sensitivity: 'base'
+      }) * directionFactor;
+    });
+    return sorted;
+  })();
+
+  const userColumns = users.length > 0 ? Object.keys(users[0]) : [];
 
   return (
     <>
@@ -176,17 +256,30 @@ function UsersPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    {Object.keys(users[0]).map((key) => (
-                      <th key={key}>{key}</th>
+                    {userColumns.map((key) => (
+                      <th key={key}>
+                        <button className="table-sort" type="button" onClick={() => handleSort(key)}>
+                          {key}
+                          <span className="table-sort__icon">
+                            {sortState.key === key
+                              ? sortState.direction === 'asc'
+                                ? '▲'
+                                : sortState.direction === 'desc'
+                                  ? '▼'
+                                  : ''
+                              : ''}
+                          </span>
+                        </button>
+                      </th>
                     ))}
                     <th>관리</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user, index) => (
+                  {sortedUsers.map((user, index) => (
                     <tr key={user[idColumn] ?? index}>
-                      {Object.values(user).map((value, valueIndex) => (
-                        <td key={valueIndex}>{String(value)}</td>
+                      {userColumns.map((key) => (
+                        <td key={key}>{String(user[key])}</td>
                       ))}
                       <td>
                         <div className="table-actions">
@@ -222,6 +315,12 @@ function UsersPage() {
           )}
         </div>
       </section>
+      <ConfirmDialog
+        open={confirmState.open}
+        message={confirmState.message}
+        onConfirm={confirmState.onConfirm || handleConfirmCancel}
+        onCancel={handleConfirmCancel}
+      />
     </>
   );
 }
