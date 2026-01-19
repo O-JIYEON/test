@@ -134,15 +134,15 @@ function UsersPage() {
             )}
             {editableColumns.map((column) => (
               <label className="project-form__field" htmlFor={`user-${column.name}`} key={column.name}>
-                <span>{column.name}</span>
                 <input
                   id={`user-${column.name}`}
                   name={column.name}
                   type="text"
                   value={formData[column.name] ?? ''}
                   onChange={(event) => handleChange(column.name, event.target.value)}
-                  placeholder={`${column.name} 값을 입력하세요`}
+                  placeholder=" "
                 />
+                <span>{column.name}</span>
               </label>
             ))}
             <div className="form-actions">

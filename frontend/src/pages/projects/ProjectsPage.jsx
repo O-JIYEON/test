@@ -10,31 +10,31 @@ function ProjectsPage() {
           <h3>프로젝트 등록</h3>
           <form className="project-form">
             <label className="project-form__field" htmlFor="project-name">
-              <span>프로젝트명</span>
               <input
                 id="project-name"
                 name="projectName"
                 type="text"
-                placeholder="프로젝트 이름을 입력하세요"
+                placeholder=" "
               />
+              <span>프로젝트명</span>
             </label>
             <label className="project-form__field" htmlFor="project-period">
-              <span>기간</span>
               <input
                 id="project-period"
                 name="projectPeriod"
                 type="text"
-                placeholder="예: 2024-01-01 ~ 2024-12-31"
+                placeholder=" "
               />
+              <span>기간</span>
             </label>
             <label className="project-form__field" htmlFor="project-description">
-              <span>설명</span>
               <textarea
                 id="project-description"
                 name="projectDescription"
                 rows="5"
-                placeholder="프로젝트 설명을 입력하세요"
+                placeholder=" "
               />
+              <span>설명</span>
             </label>
             <button className="project-form__submit" type="button">
               등록
