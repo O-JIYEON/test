@@ -1,34 +1,38 @@
 import { useEffect, useState } from 'react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
-const sourceOptions = ['inbound', 'outbound', 'marketing', 'partner'];
+const API_BASE = `http://${window.location.hostname}:5001`;
+
+const sourceOptions = ['전체', '문의(웹/매일)', '소개', '전시/세미나', '재접촉', '콜드', '파트너'];
 const productLineOptions = ['전체', 'SI(프로젝트)', '유지보수', 'PoC/데모', '구독/라이센스', 'HW+SW'];
 const regionOptions = ['전체', '수도권', '영남', '호남', '충청', '강원', '제주', '해외'];
 const segmentOptions = ['전체', 'Enterprise', 'SMB', '공공', '제조', '에너지', '조선/해양', '건설'];
 
-const salesProjectFields = [
+const customerFields = [
   { name: 'company', label: '회사', type: 'text' },
-  { name: 'project', label: '프로젝트', type: 'text' },
   { name: 'owner', label: '담당자', type: 'text' },
-  { name: 'sales_owner', label: '담당자(영업)', type: 'text' },
+  { name: 'customer_owner', label: '담당자(영업)', type: 'text' },
+  { name: 'contact', label: '연락처', type: 'text' },
+  { name: 'email', label: '이메일', type: 'text' },
   { name: 'source', label: '유입경로', type: 'select', options: sourceOptions },
   { name: 'product_line', label: '제품라인', type: 'select', options: productLineOptions },
   { name: 'region', label: '지역', type: 'select', options: regionOptions },
   { name: 'segment', label: '세그먼트', type: 'select', options: segmentOptions }
 ];
 
-const salesProjectColumns = [
+const customerColumns = [
   { key: 'id', label: 'id' },
   { key: 'company', label: '회사' },
-  { key: 'project', label: '프로젝트' },
   { key: 'owner', label: '담당자' },
-  { key: 'sales_owner', label: '담당자(영업)' },
+  { key: 'customer_owner', label: '담당자(영업)' },
+  { key: 'contact', label: '연락처' },
+  { key: 'email', label: '이메일' },
   { key: 'source', label: '유입경로' },
   { key: 'product_line', label: '제품라인' },
   { key: 'region', label: '지역' },
   { key: 'segment', label: '세그먼트' },
   { key: 'created_at', label: '생성일' },
-  { key: 'updated_at', label: '수정일' }
+  { key: 'updated_at', label: '수정일', hidden: true }
 ];
 
 const formatDate = (value) => {
@@ -42,7 +46,7 @@ const formatDate = (value) => {
   return text.length >= 10 ? text.slice(0, 10) : text;
 };
 
-function SalesProjectPage() {
+function CustomersPage() {
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState('loading');
   const [formData, setFormData] = useState({});
@@ -61,12 +65,12 @@ function SalesProjectPage() {
   const loadItems = async () => {
     try {
       setStatus('loading');
-      const response = await fetch('http://localhost:3001/api/sales-projects');
+      const response = await fetch(`${API_BASE}/api/customers`);
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch sales projects');
+        throw new Error(data.error || 'Failed to fetch customers');
       }
-      setItems(data.salesProjects || []);
+      setItems(data.customers || []);
       setStatus('ready');
       setPage(1);
     } catch (error) {
@@ -94,7 +98,7 @@ function SalesProjectPage() {
 
   const openEditModal = (item) => {
     setEditingId(item.id);
-    const nextData = salesProjectFields.reduce((acc, field) => {
+    const nextData = customerFields.reduce((acc, field) => {
       acc[field.name] = item[field.name] ?? (field.type === 'select' ? field.options[0] : '');
       return acc;
     }, {});
@@ -117,8 +121,8 @@ function SalesProjectPage() {
     try {
       const response = await fetch(
         editingId
-          ? `http://localhost:3001/api/sales-projects/${editingId}`
-          : 'http://localhost:3001/api/sales-projects',
+          ? `${API_BASE}/api/customers/${editingId}`
+          : `${API_BASE}/api/customers`,
         {
           method: editingId ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -127,7 +131,7 @@ function SalesProjectPage() {
       );
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to save sales project');
+        throw new Error(data.error || 'Failed to save customers');
       }
       await loadItems();
       setIsModalOpen(false);
@@ -146,7 +150,7 @@ function SalesProjectPage() {
     event.preventDefault();
     setConfirmState({
       open: true,
-      message: editingId ? '영업 프로젝트를 수정하시겠습니까?' : '영업 프로젝트를 등록하시겠습니까?',
+      message: editingId ? 'Customers 정보를 수정하시겠습니까?' : 'Customers 정보를 등록하시겠습니까?',
       onConfirm: () => {
         submitItem();
         setConfirmState({ open: false, message: '', onConfirm: null });
@@ -156,12 +160,12 @@ function SalesProjectPage() {
 
   const deleteItem = async (item) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/sales-projects/${item.id}`, {
+      const response = await fetch(`${API_BASE}/api/customers/${item.id}`, {
         method: 'DELETE'
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete sales project');
+        throw new Error(data.error || 'Failed to delete customers');
       }
       await loadItems();
       setIsModalOpen(false);
@@ -181,7 +185,7 @@ function SalesProjectPage() {
     }
     setConfirmState({
       open: true,
-      message: '영업 프로젝트를 삭제하시겠습니까?',
+      message: 'Customers 정보를 삭제하시겠습니까?',
       onConfirm: () => {
         deleteItem({ id: editingId });
         setConfirmState({ open: false, message: '', onConfirm: null });
@@ -203,9 +207,9 @@ function SalesProjectPage() {
     <>
       <header className="content__header">
         <div className="content__header-row">
-          <h2>Sales</h2>
+          <h2>Customers</h2>
           <button className="project-form__submit" type="button" onClick={openCreateModal}>
-            영업 프로젝트 등록
+            Customers 등록
           </button>
         </div>
       </header>
@@ -221,15 +225,19 @@ function SalesProjectPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    {salesProjectColumns.map((column) => (
-                      <th key={column.key}>{column.label}</th>
-                    ))}
+                    {customerColumns
+                      .filter((column) => !column.hidden)
+                      .map((column) => (
+                        <th key={column.key}>{column.label}</th>
+                      ))}
                   </tr>
                 </thead>
                 <tbody>
                   {visibleItems.map((item) => (
                     <tr key={item.id} className="data-table__row" onClick={() => openEditModal(item)}>
-                      {salesProjectColumns.map((column) => {
+                      {customerColumns
+                        .filter((column) => !column.hidden)
+                        .map((column) => {
                         if (column.key === 'created_at' || column.key === 'updated_at') {
                           return <td key={column.key}>{formatDate(item[column.key])}</td>;
                         }
@@ -287,7 +295,7 @@ function SalesProjectPage() {
           <div className="modal__content" role="dialog" aria-modal="true">
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
-                <h3>{editingId ? '영업 프로젝트 수정' : '영업 프로젝트 등록'}</h3>
+                <h3>{editingId ? 'Customers 수정' : 'Customers 등록'}</h3>
                 <button className="icon-button" type="button" onClick={closeModal} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
@@ -297,11 +305,11 @@ function SalesProjectPage() {
               </div>
             </div>
             <form className="project-form modal__body" onSubmit={handleSubmit}>
-              {salesProjectFields.map((field) => (
-                <label className="project-form__field" htmlFor={`sales-project-${field.name}`} key={field.name}>
+              {customerFields.map((field) => (
+                <label className="project-form__field" htmlFor={`customer-${field.name}`} key={field.name}>
                   {field.type === 'select' ? (
                     <select
-                      id={`sales-project-${field.name}`}
+                      id={`customer-${field.name}`}
                       name={field.name}
                       value={formData[field.name] ?? field.options[0]}
                       data-filled={formData[field.name] ? 'true' : 'false'}
@@ -315,7 +323,7 @@ function SalesProjectPage() {
                     </select>
                   ) : (
                     <input
-                      id={`sales-project-${field.name}`}
+                      id={`customer-${field.name}`}
                       name={field.name}
                       type={field.type}
                       placeholder=" "
@@ -355,4 +363,4 @@ function SalesProjectPage() {
   );
 }
 
-export default SalesProjectPage;
+export default CustomersPage;

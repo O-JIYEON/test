@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
+const API_BASE = `http://${window.location.hostname}:5001`;
+
 const projectFields = [
   { name: 'name', label: '프로젝트명', type: 'text' },
   { name: 'start_date', label: '시작일', type: 'date' },
@@ -253,7 +255,7 @@ function ProjectsPage() {
   const loadProjects = async () => {
     try {
       setStatus('loading');
-      const response = await fetch('http://localhost:3001/api/projects');
+      const response = await fetch(`${API_BASE}/api/projects`);
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch projects');
@@ -323,7 +325,7 @@ function ProjectsPage() {
         payload.amount = String(payload.amount).replace(/,/g, '');
       }
       const response = await fetch(
-        editingId ? `http://localhost:3001/api/projects/${editingId}` : 'http://localhost:3001/api/projects',
+        editingId ? `${API_BASE}/api/projects/${editingId}` : `${API_BASE}/api/projects`,
         {
           method: editingId ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -359,7 +361,7 @@ function ProjectsPage() {
 
   const deleteProject = async (project) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/projects/${project.id}`, {
+      const response = await fetch(`${API_BASE}/api/projects/${project.id}`, {
         method: 'DELETE'
       });
       const data = await response.json();

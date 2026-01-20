@@ -5,7 +5,9 @@ function Sidebar({ menuItems }) {
     <aside className="sidebar">
       <nav className="sidebar__nav">
         <ul>
-          {menuItems.map((item) => (
+          {menuItems
+            .filter((item) => !item.hidden)
+            .map((item) => (
             <li key={item.path} className="sidebar__item">
               <NavLink
                 to={item.path}

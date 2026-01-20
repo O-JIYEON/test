@@ -2,11 +2,27 @@ import express from 'express';
 import mysql from 'mysql2/promise';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5001;
 
 app.use(express.json());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowAnyOrigin = process.env.NODE_ENV !== 'production' && allowedOrigins.length === 0;
+
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (!origin) {
+    next();
+    return;
+  }
+  if (allowAnyOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') {
@@ -200,14 +216,14 @@ async function getProjectColumns() {
   }
 }
 
-async function getDealColumns() {
+async function getCustomersColumns() {
   const connection = await mysql.createConnection(dbConfig);
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
        FROM information_schema.columns
        WHERE table_schema = ? AND table_name = ?`,
-      [dbConfig.database, 'deal']
+      [dbConfig.database, 'customers']
     );
     return rows.map((row) => ({
       name: row.name,
@@ -218,32 +234,14 @@ async function getDealColumns() {
   }
 }
 
-async function getDealLogColumns() {
+async function getLeadColumns() {
   const connection = await mysql.createConnection(dbConfig);
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
        FROM information_schema.columns
        WHERE table_schema = ? AND table_name = ?`,
-      [dbConfig.database, 'deal_log']
-    );
-    return rows.map((row) => ({
-      name: row.name,
-      isAutoIncrement: String(row.extra).includes('auto_increment')
-    }));
-  } finally {
-    await connection.end();
-  }
-}
-
-async function getSalesProjectColumns() {
-  const connection = await mysql.createConnection(dbConfig);
-  try {
-    const [rows] = await connection.query(
-      `SELECT COLUMN_NAME AS name, EXTRA AS extra
-       FROM information_schema.columns
-       WHERE table_schema = ? AND table_name = ?`,
-      [dbConfig.database, 'sales_project']
+      [dbConfig.database, 'lead']
     );
     return rows.map((row) => ({
       name: row.name,
@@ -399,16 +397,15 @@ async function deleteProject(req, res) {
   }
 }
 
-async function getDeals(req, res) {
+async function getCustomers(req, res) {
   let connection;
-
   try {
     connection = await mysql.createConnection(dbConfig);
-    const [rows] = await connection.query('SELECT * FROM `deal` ORDER BY id DESC');
-    res.json({ deals: rows });
+    const [rows] = await connection.query('SELECT * FROM `customers` ORDER BY id DESC');
+    res.json({ customers: rows });
   } catch (error) {
-    console.error('Failed to fetch deals:', error);
-    res.status(500).json({ error: 'Failed to fetch deals' });
+    console.error('Failed to fetch customers:', error);
+    res.status(500).json({ error: 'Failed to fetch customers' });
   } finally {
     if (connection) {
       await connection.end();
@@ -416,308 +413,20 @@ async function getDeals(req, res) {
   }
 }
 
-async function getDealSchema(req, res) {
+async function getCustomersSchema(req, res) {
   try {
-    const columns = await getDealColumns();
+    const columns = await getCustomersColumns();
     res.json({ columns });
   } catch (error) {
-    console.error('Failed to fetch deal schema:', error);
-    res.status(500).json({ error: 'Failed to fetch deal schema' });
+    console.error('Failed to fetch customers schema:', error);
+    res.status(500).json({ error: 'Failed to fetch customers schema' });
   }
 }
 
-async function createDeal(req, res) {
+async function createCustomers(req, res) {
   let connection;
   try {
-    const columns = await getDealColumns();
-    const writableColumns = columns.filter((col) => !col.isAutoIncrement);
-    const payload = req.body || {};
-    const entries = writableColumns
-      .map((col) => col.name)
-      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
-      .map((name) => ({ name, value: payload[name] }));
-
-    if (entries.length === 0) {
-      res.status(400).json({ error: 'No valid fields provided' });
-      return;
-    }
-
-    const fieldNames = entries.map((entry) => `\`${entry.name}\``).join(', ');
-    const placeholders = entries.map(() => '?').join(', ');
-    const columnNames = entries.map((entry) => entry.name);
-    const normalizedValues = entries.map((entry, index) => {
-      const column = columnNames[index];
-      if (column.endsWith('_date')) {
-        return normalizeDateValue(entry.value);
-      }
-      if (column.endsWith('_amount') || column === 'probability') {
-        return normalizeNumberValue(entry.value);
-      }
-      return entry.value;
-    });
-
-    connection = await mysql.createConnection(dbConfig);
-    const [result] = await connection.query(
-      `INSERT INTO \`deal\` (${fieldNames}) VALUES (${placeholders})`,
-      normalizedValues
-    );
-    res.status(201).json({ id: result.insertId });
-  } catch (error) {
-    console.error('Failed to create deal:', error);
-    res.status(500).json({ error: 'Failed to create deal' });
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-}
-
-async function updateDeal(req, res) {
-  let connection;
-  try {
-    const { id } = req.params;
-    const columns = await getDealColumns();
-    const writableColumns = columns.filter((col) => !col.isAutoIncrement && col.name !== 'id');
-    const payload = req.body || {};
-    const entries = writableColumns
-      .map((col) => col.name)
-      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
-      .map((name) => ({ name, value: payload[name] }));
-
-    if (!id) {
-      res.status(400).json({ error: 'Missing deal id' });
-      return;
-    }
-
-    if (entries.length === 0) {
-      res.status(400).json({ error: 'No valid fields provided' });
-      return;
-    }
-
-    const sets = entries.map((entry) => `\`${entry.name}\` = ?`).join(', ');
-    const values = entries.map((entry) => {
-      if (entry.name.endsWith('_date')) {
-        return normalizeDateValue(entry.value);
-      }
-      if (entry.name.endsWith('_amount') || entry.name === 'probability') {
-        return normalizeNumberValue(entry.value);
-      }
-      return entry.value;
-    });
-    values.push(id);
-
-    connection = await mysql.createConnection(dbConfig);
-    const [result] = await connection.query(`UPDATE \`deal\` SET ${sets} WHERE id = ?`, values);
-    res.json({ updated: result.affectedRows });
-  } catch (error) {
-    console.error('Failed to update deal:', error);
-    res.status(500).json({ error: 'Failed to update deal' });
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-}
-
-async function deleteDeal(req, res) {
-  let connection;
-  try {
-    const { id } = req.params;
-    if (!id) {
-      res.status(400).json({ error: 'Missing deal id' });
-      return;
-    }
-    connection = await mysql.createConnection(dbConfig);
-    const [result] = await connection.query('DELETE FROM `deal` WHERE id = ?', [id]);
-    res.json({ deleted: result.affectedRows });
-  } catch (error) {
-    console.error('Failed to delete deal:', error);
-    res.status(500).json({ error: 'Failed to delete deal' });
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-}
-
-async function getDealLogs(req, res) {
-  let connection;
-  try {
-    const { id } = req.params;
-    if (!id) {
-      res.status(400).json({ error: 'Missing deal id' });
-      return;
-    }
-    connection = await mysql.createConnection(dbConfig);
-    const [rows] = await connection.query(
-      'SELECT * FROM `deal_log` WHERE deal_id = ? ORDER BY id DESC',
-      [id]
-    );
-    res.json({ logs: rows });
-  } catch (error) {
-    console.error('Failed to fetch deal logs:', error);
-    res.status(500).json({ error: 'Failed to fetch deal logs' });
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-}
-
-async function createDealLog(req, res) {
-  let connection;
-  try {
-    const { id } = req.params;
-    if (!id) {
-      res.status(400).json({ error: 'Missing deal id' });
-      return;
-    }
-    const columns = await getDealLogColumns();
-    const writableColumns = columns.filter(
-      (col) => !col.isAutoIncrement && col.name !== 'id' && col.name !== 'created_at'
-    );
-    const payload = { ...(req.body || {}), deal_id: id };
-    const entries = writableColumns
-      .map((col) => col.name)
-      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
-      .map((name) => ({ name, value: payload[name] }));
-
-    if (entries.length === 0) {
-      res.status(400).json({ error: 'No valid fields provided' });
-      return;
-    }
-
-    const fieldNames = entries.map((entry) => `\`${entry.name}\``).join(', ');
-    const placeholders = entries.map(() => '?').join(', ');
-    const columnNames = entries.map((entry) => entry.name);
-    const normalizedValues = entries.map((entry, index) => {
-      const column = columnNames[index];
-      if (column.endsWith('_date')) {
-        return normalizeDateValue(entry.value);
-      }
-      if (column.endsWith('_amount') || column === 'probability') {
-        return normalizeNumberValue(entry.value);
-      }
-      return entry.value;
-    });
-
-    connection = await mysql.createConnection(dbConfig);
-    const [result] = await connection.query(
-      `INSERT INTO \`deal_log\` (${fieldNames}) VALUES (${placeholders})`,
-      normalizedValues
-    );
-    res.status(201).json({ id: result.insertId });
-  } catch (error) {
-    console.error('Failed to create deal log:', error);
-    res.status(500).json({ error: 'Failed to create deal log' });
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-}
-
-async function updateDealLog(req, res) {
-  let connection;
-  try {
-    const { id } = req.params;
-    const columns = await getDealLogColumns();
-    const writableColumns = columns.filter(
-      (col) =>
-        !col.isAutoIncrement && col.name !== 'id' && col.name !== 'created_at' && col.name !== 'deal_id'
-    );
-    const payload = req.body || {};
-    const entries = writableColumns
-      .map((col) => col.name)
-      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
-      .map((name) => ({ name, value: payload[name] }));
-
-    if (!id) {
-      res.status(400).json({ error: 'Missing deal log id' });
-      return;
-    }
-
-    if (entries.length === 0) {
-      res.status(400).json({ error: 'No valid fields provided' });
-      return;
-    }
-
-    const sets = entries.map((entry) => `\`${entry.name}\` = ?`).join(', ');
-    const values = entries.map((entry) => {
-      if (entry.name.endsWith('_date')) {
-        return normalizeDateValue(entry.value);
-      }
-      if (entry.name.endsWith('_amount') || entry.name === 'probability') {
-        return normalizeNumberValue(entry.value);
-      }
-      return entry.value;
-    });
-    values.push(id);
-
-    connection = await mysql.createConnection(dbConfig);
-    const [result] = await connection.query(`UPDATE \`deal_log\` SET ${sets} WHERE id = ?`, values);
-    res.json({ updated: result.affectedRows });
-  } catch (error) {
-    console.error('Failed to update deal log:', error);
-    res.status(500).json({ error: 'Failed to update deal log' });
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-}
-
-async function deleteDealLog(req, res) {
-  let connection;
-  try {
-    const { id } = req.params;
-    if (!id) {
-      res.status(400).json({ error: 'Missing deal log id' });
-      return;
-    }
-    connection = await mysql.createConnection(dbConfig);
-    const [result] = await connection.query('DELETE FROM `deal_log` WHERE id = ?', [id]);
-    res.json({ deleted: result.affectedRows });
-  } catch (error) {
-    console.error('Failed to delete deal log:', error);
-    res.status(500).json({ error: 'Failed to delete deal log' });
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-}
-
-async function getSalesProjects(req, res) {
-  let connection;
-  try {
-    connection = await mysql.createConnection(dbConfig);
-    const [rows] = await connection.query('SELECT * FROM `sales_project` ORDER BY id DESC');
-    res.json({ salesProjects: rows });
-  } catch (error) {
-    console.error('Failed to fetch sales projects:', error);
-    res.status(500).json({ error: 'Failed to fetch sales projects' });
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-}
-
-async function getSalesProjectsSchema(req, res) {
-  try {
-    const columns = await getSalesProjectColumns();
-    res.json({ columns });
-  } catch (error) {
-    console.error('Failed to fetch sales project schema:', error);
-    res.status(500).json({ error: 'Failed to fetch sales project schema' });
-  }
-}
-
-async function createSalesProject(req, res) {
-  let connection;
-  try {
-    const columns = await getSalesProjectColumns();
+    const columns = await getCustomersColumns();
     const writableColumns = columns.filter(
       (col) =>
         !col.isAutoIncrement && col.name !== 'created_at' && col.name !== 'updated_at'
@@ -739,13 +448,13 @@ async function createSalesProject(req, res) {
 
     connection = await mysql.createConnection(dbConfig);
     const [result] = await connection.query(
-      `INSERT INTO \`sales_project\` (${fieldNames}) VALUES (${placeholders})`,
+      `INSERT INTO \`customers\` (${fieldNames}) VALUES (${placeholders})`,
       values
     );
     res.status(201).json({ id: result.insertId });
   } catch (error) {
-    console.error('Failed to create sales project:', error);
-    res.status(500).json({ error: 'Failed to create sales project' });
+    console.error('Failed to create customers:', error);
+    res.status(500).json({ error: 'Failed to create customers' });
   } finally {
     if (connection) {
       await connection.end();
@@ -753,11 +462,11 @@ async function createSalesProject(req, res) {
   }
 }
 
-async function updateSalesProject(req, res) {
+async function updateCustomers(req, res) {
   let connection;
   try {
     const { id } = req.params;
-    const columns = await getSalesProjectColumns();
+    const columns = await getCustomersColumns();
     const writableColumns = columns.filter(
       (col) =>
         !col.isAutoIncrement &&
@@ -772,7 +481,7 @@ async function updateSalesProject(req, res) {
       .map((name) => ({ name, value: payload[name] }));
 
     if (!id) {
-      res.status(400).json({ error: 'Missing sales project id' });
+      res.status(400).json({ error: 'Missing customers id' });
       return;
     }
 
@@ -787,13 +496,13 @@ async function updateSalesProject(req, res) {
 
     connection = await mysql.createConnection(dbConfig);
     const [result] = await connection.query(
-      `UPDATE \`sales_project\` SET ${sets} WHERE id = ?`,
+      `UPDATE \`customers\` SET ${sets} WHERE id = ?`,
       values
     );
     res.json({ updated: result.affectedRows });
   } catch (error) {
-    console.error('Failed to update sales project:', error);
-    res.status(500).json({ error: 'Failed to update sales project' });
+    console.error('Failed to update customers:', error);
+    res.status(500).json({ error: 'Failed to update customers' });
   } finally {
     if (connection) {
       await connection.end();
@@ -801,20 +510,175 @@ async function updateSalesProject(req, res) {
   }
 }
 
-async function deleteSalesProject(req, res) {
+async function deleteCustomers(req, res) {
   let connection;
   try {
     const { id } = req.params;
     if (!id) {
-      res.status(400).json({ error: 'Missing sales project id' });
+      res.status(400).json({ error: 'Missing customers id' });
       return;
     }
     connection = await mysql.createConnection(dbConfig);
-    const [result] = await connection.query('DELETE FROM `sales_project` WHERE id = ?', [id]);
+    const [result] = await connection.query('DELETE FROM `customers` WHERE id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
-    console.error('Failed to delete sales project:', error);
-    res.status(500).json({ error: 'Failed to delete sales project' });
+    console.error('Failed to delete customers:', error);
+    res.status(500).json({ error: 'Failed to delete customers' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function getLeads(req, res) {
+  let connection;
+  try {
+    connection = await mysql.createConnection(dbConfig);
+    const [rows] = await connection.query(
+      `SELECT
+        lead.id,
+        lead.customer_id,
+        lead.content,
+        lead.lead_status,
+        lead.next_action_date,
+        lead.next_action_content,
+        lead.created_at,
+        customers.company,
+        customers.owner,
+        customers.contact,
+        customers.email,
+        customers.customer_owner,
+        customers.source,
+        customers.product_line,
+        customers.region,
+        customers.segment
+      FROM \`lead\`
+      LEFT JOIN \`customers\` ON customers.id = lead.customer_id
+      ORDER BY lead.id DESC`
+    );
+    res.json({ leads: rows });
+  } catch (error) {
+    console.error('Failed to fetch leads:', error);
+    res.status(500).json({ error: 'Failed to fetch leads' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function getLeadsSchema(req, res) {
+  try {
+    const columns = await getLeadColumns();
+    res.json({ columns });
+  } catch (error) {
+    console.error('Failed to fetch lead schema:', error);
+    res.status(500).json({ error: 'Failed to fetch lead schema' });
+  }
+}
+
+async function createLead(req, res) {
+  let connection;
+  try {
+    const columns = await getLeadColumns();
+    const writableColumns = columns.filter((col) => !col.isAutoIncrement);
+    const payload = req.body || {};
+    const entries = writableColumns
+      .map((col) => col.name)
+      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
+      .map((name) => ({ name, value: payload[name] }));
+
+    if (entries.length === 0) {
+      res.status(400).json({ error: 'No valid fields provided' });
+      return;
+    }
+
+    const fieldNames = entries.map((entry) => `\`${entry.name}\``).join(', ');
+    const placeholders = entries.map(() => '?').join(', ');
+    const columnNames = entries.map((entry) => entry.name);
+    const normalizedValues = entries.map((entry, index) => {
+      const column = columnNames[index];
+      if (column.endsWith('_date')) {
+        return normalizeDateValue(entry.value);
+      }
+      return entry.value;
+    });
+
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query(
+      `INSERT INTO \`lead\` (${fieldNames}) VALUES (${placeholders})`,
+      normalizedValues
+    );
+    res.status(201).json({ id: result.insertId });
+  } catch (error) {
+    console.error('Failed to create lead:', error);
+    res.status(500).json({ error: 'Failed to create lead' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function updateLead(req, res) {
+  let connection;
+  try {
+    const { id } = req.params;
+    const columns = await getLeadColumns();
+    const writableColumns = columns.filter((col) => !col.isAutoIncrement && col.name !== 'id');
+    const payload = req.body || {};
+    const entries = writableColumns
+      .map((col) => col.name)
+      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
+      .map((name) => ({ name, value: payload[name] }));
+
+    if (!id) {
+      res.status(400).json({ error: 'Missing lead id' });
+      return;
+    }
+
+    if (entries.length === 0) {
+      res.status(400).json({ error: 'No valid fields provided' });
+      return;
+    }
+
+    const sets = entries.map((entry) => `\`${entry.name}\` = ?`).join(', ');
+    const values = entries.map((entry) => {
+      if (entry.name.endsWith('_date')) {
+        return normalizeDateValue(entry.value);
+      }
+      return entry.value;
+    });
+    values.push(id);
+
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query(`UPDATE \`lead\` SET ${sets} WHERE id = ?`, values);
+    res.json({ updated: result.affectedRows });
+  } catch (error) {
+    console.error('Failed to update lead:', error);
+    res.status(500).json({ error: 'Failed to update lead' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function deleteLead(req, res) {
+  let connection;
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ error: 'Missing lead id' });
+      return;
+    }
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query('DELETE FROM `lead` WHERE id = ?', [id]);
+    res.json({ deleted: result.affectedRows });
+  } catch (error) {
+    console.error('Failed to delete lead:', error);
+    res.status(500).json({ error: 'Failed to delete lead' });
   } finally {
     if (connection) {
       await connection.end();
@@ -849,21 +713,17 @@ app.post('/api/projects', createProject);
 app.put('/api/projects/:id', updateProject);
 app.delete('/api/projects/:id', deleteProject);
 
-app.get('/api/deals', getDeals);
-app.get('/api/deals/schema', getDealSchema);
-app.post('/api/deals', createDeal);
-app.put('/api/deals/:id', updateDeal);
-app.delete('/api/deals/:id', deleteDeal);
-app.get('/api/deals/:id/logs', getDealLogs);
-app.post('/api/deals/:id/logs', createDealLog);
-app.put('/api/deal-logs/:id', updateDealLog);
-app.delete('/api/deal-logs/:id', deleteDealLog);
-app.get('/api/sales-projects', getSalesProjects);
-app.get('/api/sales-projects/schema', getSalesProjectsSchema);
-app.post('/api/sales-projects', createSalesProject);
-app.put('/api/sales-projects/:id', updateSalesProject);
-app.delete('/api/sales-projects/:id', deleteSalesProject);
+app.get('/api/customers', getCustomers);
+app.get('/api/customers/schema', getCustomersSchema);
+app.post('/api/customers', createCustomers);
+app.put('/api/customers/:id', updateCustomers);
+app.delete('/api/customers/:id', deleteCustomers);
+app.get('/api/leads', getLeads);
+app.get('/api/leads/schema', getLeadsSchema);
+app.post('/api/leads', createLead);
+app.put('/api/leads/:id', updateLead);
+app.delete('/api/leads/:id', deleteLead);
 
-app.listen(PORT, () => {
-  console.log(`Sales management backend listening on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Customers management backend listening on port ${PORT}`);
 });

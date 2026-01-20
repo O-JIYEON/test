@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+
+const API_BASE = `http://${window.location.hostname}:5001`;
 import ConfirmDialog from '../../components/ConfirmDialog';
 
 function UsersPage() {
@@ -20,7 +22,7 @@ function UsersPage() {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/users');
+      const response = await fetch(`${API_BASE}/api/users`);
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch users');
@@ -38,7 +40,7 @@ function UsersPage() {
 
     async function fetchSchemaAndUsers() {
       try {
-        const response = await fetch('http://localhost:3001/api/users/schema');
+        const response = await fetch(`${API_BASE}/api/users/schema`);
         const data = await response.json();
         if (!response.ok) {
           throw new Error(data.error || 'Failed to fetch schema');
@@ -76,7 +78,7 @@ function UsersPage() {
     setFormStatus('saving');
     try {
       const response = await fetch(
-        editingId ? `http://localhost:3001/api/users/${editingId}` : 'http://localhost:3001/api/users',
+        editingId ? `${API_BASE}/api/users/${editingId}` : `${API_BASE}/api/users`,
         {
           method: editingId ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -124,7 +126,7 @@ function UsersPage() {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${userId}`, {
+      const response = await fetch(`${API_BASE}/api/users/${userId}`, {
         method: 'DELETE'
       });
       const data = await response.json();
