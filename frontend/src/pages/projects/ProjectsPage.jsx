@@ -11,11 +11,51 @@ const projectFields = [
     name: 'source',
     label: '유입경로',
     type: 'select',
-    options: ['inbound', 'outbound', 'referral', 'event', 'marketing']
+    options: ['전체', '문의(웹/매일)', '소개', '전시/세미나', '재접촉', '콜드', '파트너']
   },
   { name: 'company', label: '회사명', type: 'text' },
-  { name: 'amount', label: '금액', type: 'number' }
+  { name: 'amount', label: '금액', type: 'number' },
+  {
+    name: 'status',
+    label: '상태',
+    type: 'select',
+    options: ['대기', '진행', '지연', '종료']
+  }
 ];
+
+const statusClassMap = {
+  대기: 'standby',
+  진행: 'inprogress',
+  지연: 'delay',
+  종료: 'closed'
+};
+
+const statusLabelMap = {
+  대기: '대기',
+  진행: '진행',
+  지연: '지연',
+  종료: '종료'
+};
+
+const sourceInitialMap = {
+  전체: 'A',
+  '문의(웹/매일)': 'W',
+  소개: 'I',
+  '전시/세미나': 'S',
+  재접촉: 'R',
+  콜드: 'C',
+  파트너: 'P'
+};
+
+const sourceClassMap = {
+  전체: 'all',
+  '문의(웹/매일)': 'inquiry',
+  소개: 'referral',
+  '전시/세미나': 'seminar',
+  재접촉: 'recontact',
+  콜드: 'cold',
+  파트너: 'partner'
+};
 
 const projectColumns = [
   { key: 'id', label: 'id' },
@@ -27,6 +67,7 @@ const projectColumns = [
   { key: 'source', label: '소스' },
   { key: 'company', label: '회사명' },
   { key: 'amount', label: '금액' },
+  { key: 'status', label: '상태' },
 ];
 
 const formatDate = (value) => {
@@ -38,6 +79,21 @@ const formatDate = (value) => {
 };
 
 const normalizeDateInput = (value) => formatDate(value);
+
+const formatDday = (endDate) => {
+  const end = parseDate(endDate);
+  if (!end) {
+    return '';
+  }
+  const today = new Date();
+  const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+  const diffMs = end.getTime() - normalizedToday.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) {
+    return 'D-0';
+  }
+  return diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`;
+};
 
 const parseDate = (value) => {
   if (!value) {
@@ -180,15 +236,17 @@ function ProjectsPage() {
   const [includeCompleted, setIncludeCompleted] = useState(false);
   const [summaryDisplay, setSummaryDisplay] = useState({
     total: 0,
-    planned: 0,
+    standby: 0,
     inProgress: 0,
-    completed: 0
+    delay: 0,
+    closed: 0
   });
   const summaryDisplayRef = useRef({
     total: 0,
-    planned: 0,
+    standby: 0,
     inProgress: 0,
-    completed: 0
+    delay: 0,
+    closed: 0
   });
   const pageSize = 10;
 
@@ -221,6 +279,18 @@ function ProjectsPage() {
   };
 
   const openEditModal = (project) => {
+    setEditingId(project.id);
+    const nextData = projectFields.reduce((acc, field) => {
+      const rawValue = project[field.name] ?? '';
+      acc[field.name] = field.type === 'date' ? normalizeDateInput(rawValue) : rawValue;
+      return acc;
+    }, {});
+    setFormData(nextData);
+    setFormStatus('');
+    setIsModalOpen(true);
+  };
+
+  const openTimelineModal = (project) => {
     setEditingId(project.id);
     const nextData = projectFields.reduce((acc, field) => {
       const rawValue = project[field.name] ?? '';
@@ -364,49 +434,40 @@ function ProjectsPage() {
 
   const filteredProjects = includeCompleted
     ? sortedProjects
-    : sortedProjects.filter((project) => {
-        if (!project.start_date || !project.end_date) {
-          return false;
-        }
-        const start = parseDate(project.start_date);
-        const end = parseDate(project.end_date);
-        if (!start || !end) {
-          return false;
-        }
-        const today = new Date();
-        const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
-        return end >= normalizedToday;
-      });
+    : sortedProjects.filter((project) => project.status !== '종료');
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize));
   const clampedPage = Math.min(page, totalPages);
   const pageStart = (clampedPage - 1) * pageSize;
   const visibleProjects = filteredProjects.slice(pageStart, pageStart + pageSize);
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
-  const summary = useMemo(() => {
-    const today = new Date();
-    const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
-    return projects.reduce(
-      (acc, project) => {
-        acc.total += 1;
-        const start = parseDate(project.start_date);
-        const end = parseDate(project.end_date);
-        if (!start || !end) {
+  const summary = useMemo(
+    () =>
+      projects.reduce(
+        (acc, project) => {
+          acc.total += 1;
+          switch (project.status) {
+            case '대기':
+              acc.standby += 1;
+              break;
+            case '진행':
+              acc.inProgress += 1;
+              break;
+            case '지연':
+              acc.delay += 1;
+              break;
+            case '종료':
+              acc.closed += 1;
+              break;
+            default:
+              acc.standby += 1;
+              break;
+          }
           return acc;
-        }
-        if (end < normalizedToday) {
-          acc.completed += 1;
-          return acc;
-        }
-        if (start > normalizedToday) {
-          acc.planned += 1;
-          return acc;
-        }
-        acc.inProgress += 1;
-        return acc;
-      },
-      { total: 0, planned: 0, inProgress: 0, completed: 0 }
-    );
-  }, [projects]);
+        },
+        { total: 0, standby: 0, inProgress: 0, delay: 0, closed: 0 }
+      ),
+    [projects]
+  );
   const [timelineMode, setTimelineMode] = useState('page');
   const timelineProjects = timelineMode === 'all' ? projects : visibleProjects;
   const timeline = useMemo(() => buildTimeline(timelineProjects), [timelineProjects]);
@@ -464,9 +525,10 @@ function ProjectsPage() {
       const progress = Math.min(1, (now - start) / duration);
       const next = {
         total: Math.round(from.total + (summary.total - from.total) * progress),
-        planned: Math.round(from.planned + (summary.planned - from.planned) * progress),
+        standby: Math.round(from.standby + (summary.standby - from.standby) * progress),
         inProgress: Math.round(from.inProgress + (summary.inProgress - from.inProgress) * progress),
-        completed: Math.round(from.completed + (summary.completed - from.completed) * progress)
+        delay: Math.round(from.delay + (summary.delay - from.delay) * progress),
+        closed: Math.round(from.closed + (summary.closed - from.closed) * progress)
       };
       summaryDisplayRef.current = next;
       setSummaryDisplay(next);
@@ -509,16 +571,20 @@ function ProjectsPage() {
               <span className="summary__value">{summaryDisplay.total}</span>
             </div>
             <div className="summary__item">
-              <span className="summary__label">예정</span>
-              <span className="summary__value">{summaryDisplay.planned}</span>
+              <span className="summary__label">대기</span>
+              <span className="summary__value">{summaryDisplay.standby}</span>
             </div>
             <div className="summary__item">
               <span className="summary__label">진행</span>
               <span className="summary__value">{summaryDisplay.inProgress}</span>
             </div>
             <div className="summary__item">
-              <span className="summary__label">완료</span>
-              <span className="summary__value">{summaryDisplay.completed}</span>
+              <span className="summary__label">지연</span>
+              <span className="summary__value">{summaryDisplay.delay}</span>
+            </div>
+            <div className="summary__item">
+              <span className="summary__label">종료</span>
+              <span className="summary__value">{summaryDisplay.closed}</span>
             </div>
           </div>
         </div>
@@ -527,18 +593,14 @@ function ProjectsPage() {
               <h3>프로젝트 기간</h3>
               <div className="timeline-controls">
                 <div className="timeline-legend">
-                  <span className="timeline-legend__item">
-                    <span className="timeline-legend__swatch timeline-legend__swatch--past" />
-                    종료
-                  </span>
-                  <span className="timeline-legend__item">
-                    <span className="timeline-legend__swatch timeline-legend__swatch--active" />
-                    진행중
-                  </span>
-                  <span className="timeline-legend__item">
-                    <span className="timeline-legend__swatch timeline-legend__swatch--future" />
-                    예정
-                  </span>
+                  {Object.entries(statusLabelMap).map(([status, label]) => (
+                    <span className="timeline-legend__item" key={status}>
+                      <span
+                        className={`timeline-legend__swatch timeline-legend__swatch--${statusClassMap[status]}`}
+                      />
+                      {label}
+                    </span>
+                  ))}
                 </div>
                 <div className="toggle-group">
                   <button
@@ -628,64 +690,74 @@ function ProjectsPage() {
                           .map((item) => {
                             const startOffset = item.startIndex + item.startDayFraction;
                             const endOffset = item.endIndex + item.endDayFraction;
-                            if (useFixedTimeline) {
-                              const startPx =
-                                item.startIndex * (timelineCell + timelineGap) +
-                                item.startDayFraction * timelineCell;
-                              const endPx =
-                                item.endIndex * (timelineCell + timelineGap) +
-                                item.endDayFraction * timelineCell;
-                              const widthPx = Math.max(8, endPx - startPx);
+                              if (useFixedTimeline) {
+                                const statusKey = statusClassMap[item.status] || 'unknown';
+                                const startPx =
+                                  item.startIndex * (timelineCell + timelineGap) +
+                                  item.startDayFraction * timelineCell;
+                                const endPx =
+                                  item.endIndex * (timelineCell + timelineGap) +
+                                  item.endDayFraction * timelineCell;
+                                const widthPx = Math.max(8, endPx - startPx);
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className={`timeline__bar timeline__bar--status-${statusKey}${
+                                      item.isPast ? ' timeline__bar--past' : ''
+                                    }${item.isActive ? ' timeline__bar--active' : ''}${
+                                      item.isFuture ? ' timeline__bar--future' : ''
+                                    }${hoveredProjectId === item.id ? ' timeline__bar--highlight' : ''}`}
+                                    style={{ left: `${startPx}px`, width: `${widthPx}px` }}
+                                    data-tooltip={`${item.name} (${formatDate(item.start_date)} ~ ${formatDate(
+                                      item.end_date
+                                    )})`}
+                                    onMouseEnter={() => setHoveredProjectId(item.id)}
+                                    onMouseLeave={() => setHoveredProjectId(null)}
+                                    onClick={() => openTimelineModal(item)}
+                                  >
+                                    <span className="timeline__bar-label">
+                                      [{item.company ?? '-'}] {item.name}
+                                    </span>
+                                    {item.status && (item.status === '진행' || item.status === '지연') && (
+                                      <span className="timeline__bar-dday">{formatDday(item.end_date)}</span>
+                                    )}
+                                    {hoveredProjectId === item.id && (
+                                      <span className="timeline__tooltip">
+                                        {item.name} ({formatDate(item.start_date)} ~ {formatDate(item.end_date)})
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              }
+                              const statusKey = statusClassMap[item.status] || 'unknown';
+                              const startPercent = (startOffset / timeline.months.length) * 100;
+                              const endPercent = (endOffset / timeline.months.length) * 100;
+                              const widthPercent = Math.max(1, endPercent - startPercent);
                               return (
                                 <div
                                   key={item.id}
-                                  className={`timeline__bar${item.isPast ? ' timeline__bar--past' : ''}${
-                                    item.isActive ? ' timeline__bar--active' : ''
-                                  }${item.isFuture ? ' timeline__bar--future' : ''}${
-                                    hoveredProjectId === item.id ? ' timeline__bar--highlight' : ''
-                                  }`}
-                                  style={{ left: `${startPx}px`, width: `${widthPx}px` }}
+                                  className={`timeline__bar timeline__bar--status-${statusKey}${
+                                    item.isPast ? ' timeline__bar--past' : ''
+                                  }${item.isActive ? ' timeline__bar--active' : ''}${
+                                    item.isFuture ? ' timeline__bar--future' : ''
+                                  }${hoveredProjectId === item.id ? ' timeline__bar--highlight' : ''}`}
+                                  style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
                                   data-tooltip={`${item.name} (${formatDate(item.start_date)} ~ ${formatDate(
                                     item.end_date
                                   )})`}
                                   onMouseEnter={() => setHoveredProjectId(item.id)}
                                   onMouseLeave={() => setHoveredProjectId(null)}
+                                  onClick={() => openTimelineModal(item)}
                                 >
                                   <span className="timeline__bar-label">
                                     [{item.company ?? '-'}] {item.name}
                                   </span>
+                                  {item.status && (item.status === '진행' || item.status === '지연') && (
+                                    <span className="timeline__bar-dday">{formatDday(item.end_date)}</span>
+                                  )}
                                   {hoveredProjectId === item.id && (
                                     <span className="timeline__tooltip">
                                       {item.name} ({formatDate(item.start_date)} ~ {formatDate(item.end_date)})
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            }
-                            const startPercent = (startOffset / timeline.months.length) * 100;
-                            const endPercent = (endOffset / timeline.months.length) * 100;
-                            const widthPercent = Math.max(1, endPercent - startPercent);
-                            return (
-                              <div
-                                key={item.id}
-                                className={`timeline__bar${item.isPast ? ' timeline__bar--past' : ''}${
-                                  item.isActive ? ' timeline__bar--active' : ''
-                                }${item.isFuture ? ' timeline__bar--future' : ''}${
-                                  hoveredProjectId === item.id ? ' timeline__bar--highlight' : ''
-                                }`}
-                                style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
-                                data-tooltip={`${item.name} (${formatDate(item.start_date)} ~ ${formatDate(
-                                  item.end_date
-                                )})`}
-                                onMouseEnter={() => setHoveredProjectId(item.id)}
-                                onMouseLeave={() => setHoveredProjectId(null)}
-                              >
-                                <span className="timeline__bar-label">
-                                  [{item.company ?? '-'}] {item.name}
-                                </span>
-                                {hoveredProjectId === item.id && (
-                                  <span className="timeline__tooltip">
-                                    {item.name} ({formatDate(item.start_date)} ~ {formatDate(item.end_date)})
                                   </span>
                                 )}
                               </div>
@@ -734,16 +806,18 @@ function ProjectsPage() {
                         </button>
                       </th>
                     ))}
-                    <th>수정/삭제</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleProjects.map((project) => (
                     <tr
                       key={project.id}
-                      className={hoveredProjectId === project.id ? 'table-row--highlight' : ''}
+                      className={`${hoveredProjectId === project.id ? 'table-row--highlight' : ''}${
+                        project.status === '종료' ? ' table-row--disabled' : ''
+                      }`}
                       onMouseEnter={() => setHoveredProjectId(project.id)}
                       onMouseLeave={() => setHoveredProjectId(null)}
+                      onClick={() => openEditModal(project)}
                     >
                       {projectColumns.map((column) => {
                         if (column.key === 'start_date' || column.key === 'end_date') {
@@ -752,34 +826,30 @@ function ProjectsPage() {
                         if (column.key === 'amount') {
                           return <td key={column.key}>{formatAmount(project[column.key])}</td>;
                         }
+                        if (column.key === 'status') {
+                          const statusKey = statusClassMap[project.status] || 'unknown';
+                          return (
+                            <td key={column.key}>
+                              <span className={`status-badge status-badge--${statusKey}`}>
+                                {project.status ?? '-'}
+                              </span>
+                            </td>
+                          );
+                        }
+                        if (column.key === 'source') {
+                          const source = project[column.key] ?? '';
+                          const badgeLabel = sourceInitialMap[source] || (source ? source[0].toUpperCase() : '-');
+                          const badgeClass = sourceClassMap[source] || 'default';
+                          return (
+                            <td key={column.key}>
+                              <span className={`source-badge source-badge--${badgeClass}`}>
+                                {badgeLabel || '-'}
+                              </span>
+                            </td>
+                          );
+                        }
                         return <td key={column.key}>{project[column.key] ?? ''}</td>;
                       })}
-                      <td>
-                        <div className="table-actions">
-                          <button
-                            className="icon-button"
-                            type="button"
-                            aria-label="프로젝트 수정"
-                            onClick={() => openEditModal(project)}
-                          >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M4 16.5V20h3.5L18.4 9.1l-3.5-3.5L4 16.5z" />
-                              <path d="M19.7 7.8c.4-.4.4-1 0-1.4L17.6 4.3c-.4-.4-1-.4-1.4 0l-1.6 1.6 3.5 3.5 1.6-1.6z" />
-                            </svg>
-                          </button>
-                          <button
-                            className="icon-button icon-button--danger"
-                            type="button"
-                            aria-label="프로젝트 삭제"
-                            onClick={() => handleDelete(project)}
-                          >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M6 7h12l-1 13H7L6 7z" />
-                              <path d="M9 4h6l1 2H8l1-2z" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -793,8 +863,11 @@ function ProjectsPage() {
                 type="button"
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 disabled={clampedPage === 1}
+                aria-label="이전 페이지"
               >
-                이전
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M15.5 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" />
+                </svg>
               </button>
               <div className="pagination__pages">
                 {pages.map((pageNumber) => (
@@ -815,8 +888,11 @@ function ProjectsPage() {
                 type="button"
                 onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={clampedPage === totalPages}
+                aria-label="다음 페이지"
               >
-                다음
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8.5 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" />
+                </svg>
               </button>
             </div>
           )}
@@ -881,13 +957,19 @@ function ProjectsPage() {
                   <span>{field.label}</span>
                 </label>
               ))}
-              <div className="form-actions">
+              <div className="form-actions modal__actions">
                 <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
-                  {editingId ? '수정 저장' : '등록'}
+                  {editingId ? '저장' : '등록'}
                 </button>
-                <button className="form-actions__reset" type="button" onClick={closeModal}>
-                  닫기
-                </button>
+                {editingId && formData.status !== '종료' && (
+                  <button
+                    className="project-form__submit project-form__submit--danger"
+                    type="button"
+                    onClick={() => handleDelete({ id: editingId })}
+                  >
+                    삭제
+                  </button>
+                )}
               </div>
               {formStatus === 'error' && (
                 <p className="table__status table__status--error">저장에 실패했습니다.</p>

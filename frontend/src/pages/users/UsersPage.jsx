@@ -227,7 +227,7 @@ function UsersPage() {
             ))}
             <div className="form-actions">
               <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
-                {editingId ? '수정 저장' : '등록'}
+                {editingId ? '저장' : '등록'}
               </button>
               {editingId && (
                 <button className="form-actions__reset" type="button" onClick={resetForm}>

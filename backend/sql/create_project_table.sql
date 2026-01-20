@@ -8,5 +8,6 @@ CREATE TABLE IF NOT EXISTS `project` (
   `source` VARCHAR(255),
   `company` VARCHAR(255),
   `amount` DECIMAL(15, 0),
+  `status` VARCHAR(50),
   PRIMARY KEY (`id`)
 );
