@@ -444,33 +444,35 @@ function CustomersPage() {
         </div>
       </header>
       <section className="content__section content__section--split">
-        <div className="content__card content__card--wide">
-          <div className="content__card-header">
-            <h3>고객사 목록</h3>
-            <button className="project-form__submit project-form__submit--compact" type="button" onClick={openCreateModal}>
-              등록
-            </button>
+        <div className="content__split-column">
+          <div className="content__section-title-row">
+            <h3 className="content__section-title">고객사 목록</h3>
+            <span className="content__section-meta">{items.length}개사</span>
           </div>
-          <div className="filter-row filter-row--wide">
-            <form className="project-form filter-form" onSubmit={(event) => event.preventDefault()}>
-              <div className="filter-form__fields">
-                <label className="project-form__field filter-form__field--wide filter-form__field--compact" htmlFor="customer-search">
-                  <input
-                    id="customer-search"
-                    name="customer-search"
-                    type="text"
-                    placeholder=" "
-                    value={customerSearch}
-                    onChange={(event) => {
-                      setCustomerSearch(event.target.value);
-                      setPage(1);
-                    }}
-                  />
-                  <span>검색 (회사명, 사업자등록번호)</span>
-                </label>
-              </div>
-            </form>
-          </div>
+          <div className="content__card content__card--wide">
+            <div className="content__card-header content__card-header--between">
+              <form className="project-form filter-form" onSubmit={(event) => event.preventDefault()}>
+                <div className="filter-form__fields">
+                  <label className="project-form__field filter-form__field--wide filter-form__field--compact contact-search--wide" htmlFor="customer-search">
+                    <input
+                      id="customer-search"
+                      name="customer-search"
+                      type="text"
+                      placeholder=" "
+                      value={customerSearch}
+                      onChange={(event) => {
+                        setCustomerSearch(event.target.value);
+                        setPage(1);
+                      }}
+                    />
+                    <span>검색 (회사명, 사업자등록번호)</span>
+                  </label>
+                </div>
+              </form>
+              <button className="project-form__submit project-form__submit--compact" type="button" onClick={openCreateModal}>
+                등록
+              </button>
+            </div>
           {status === 'loading' && <p className="table__status">불러오는 중...</p>}
           {status === 'error' && null}
           {status === 'ready' && filteredCustomers.length === 0 && (
@@ -592,45 +594,45 @@ function CustomersPage() {
               </button>
             </div>
           )}
+          </div>
         </div>
-        <div className="content__card content__card--wide">
-          <div className="content__card-header">
-            <div>
-              <h3>담당자 목록</h3>
-              <p className="content__card-subtitle">
-                선택 고객사: {selectedCustomer?.company ?? '없음'}
-              </p>
+        <div className="content__split-column">
+          <div className="content__section-title-row">
+            <h3 className="content__section-title">담당자 목록</h3>
+            <span className="content__section-meta">
+              선택 고객사: {selectedCustomer?.company ?? '없음'}
+            </span>
+          </div>
+          <div className="content__card content__card--wide">
+            <div className="content__card-header content__card-header--between">
+              <form className="project-form filter-form" onSubmit={(event) => event.preventDefault()}>
+                <div className="filter-form__fields">
+                  <label className="project-form__field filter-form__field--wide filter-form__field--compact contact-search--wide" htmlFor="contact-search">
+                    <input
+                      id="contact-search"
+                      name="contact-search"
+                      type="text"
+                      placeholder=" "
+                      value={contactSearch}
+                      onChange={(event) => {
+                        setContactSearch(event.target.value);
+                        setContactPage(1);
+                      }}
+                      disabled={!selectedCustomerId}
+                    />
+                    <span>검색 (담당자명)</span>
+                  </label>
+                </div>
+              </form>
+              <button
+                className="project-form__submit project-form__submit--compact"
+                type="button"
+                onClick={openCreateContactModal}
+                disabled={!selectedCustomerId}
+              >
+                등록
+              </button>
             </div>
-            <button
-              className="project-form__submit project-form__submit--compact"
-              type="button"
-              onClick={openCreateContactModal}
-              disabled={!selectedCustomerId}
-            >
-              등록
-            </button>
-          </div>
-          <div className="filter-row filter-row--wide">
-            <form className="project-form filter-form" onSubmit={(event) => event.preventDefault()}>
-              <div className="filter-form__fields">
-                <label className="project-form__field filter-form__field--wide filter-form__field--compact" htmlFor="contact-search">
-                  <input
-                    id="contact-search"
-                    name="contact-search"
-                    type="text"
-                    placeholder=" "
-                    value={contactSearch}
-                    onChange={(event) => {
-                      setContactSearch(event.target.value);
-                      setContactPage(1);
-                    }}
-                    disabled={!selectedCustomerId}
-                  />
-                  <span>검색 (담당자명)</span>
-                </label>
-              </div>
-            </form>
-          </div>
           {!selectedCustomerId && <p className="table__status">고객사를 선택해 주세요.</p>}
           {selectedCustomerId && contactsStatus === 'loading' && (
             <p className="table__status">불러오는 중...</p>
@@ -772,6 +774,7 @@ function CustomersPage() {
               </button>
             </div>
           )}
+          </div>
         </div>
       </section>
       {isModalOpen && (
