@@ -9,7 +9,21 @@ const productLineOptions = ['전체', 'SI(프로젝트)', '유지보수', 'PoC/�
 const regionOptions = ['전체', '수도권', '영남', '호남', '충청', '강원', '제주', '해외'];
 const segmentOptions = ['전체', 'Enterprise', 'SMB', '공공', '제조', '에너지', '조선/해양', '건설'];
 
+const customerFields = [
+  { name: 'business_registration_number', label: '사업자 등록증번호', type: 'text' }
+];
+
+const contactDetailFields = [
+  { name: 'contact', label: '연락처', type: 'text' },
+  { name: 'email', label: '이메일', type: 'text' }
+];
+
 const leadFields = [
+  { name: 'customer_owner', label: '담당자(영업)', type: 'text' },
+  { name: 'source', label: '유입소스', type: 'select', options: sourceOptions },
+  { name: 'product_line', label: '제품라인', type: 'select', options: productLineOptions },
+  { name: 'region', label: '지역', type: 'select', options: regionOptions },
+  { name: 'segment', label: '세그먼트', type: 'select', options: segmentOptions },
   {
     name: 'lead_status',
     label: '리드상태',
@@ -19,18 +33,6 @@ const leadFields = [
   { name: 'content', label: '내용', type: 'textarea' },
   { name: 'next_action_date', label: '다음액션일', type: 'date' },
   { name: 'next_action_content', label: '다음액션내용', type: 'textarea' }
-];
-
-const customerFields = [
-  { name: 'company', label: '회사명', type: 'text' },
-  { name: 'owner', label: '담당자', type: 'text' },
-  { name: 'contact', label: '연락처', type: 'text' },
-  { name: 'email', label: '이메일', type: 'text' },
-  { name: 'customer_owner', label: '담당자(영업)', type: 'text' },
-  { name: 'source', label: '유입소스', type: 'select', options: sourceOptions },
-  { name: 'product_line', label: '제품라인', type: 'select', options: productLineOptions },
-  { name: 'region', label: '지역', type: 'select', options: regionOptions },
-  { name: 'segment', label: '세그먼트', type: 'select', options: segmentOptions }
 ];
 
 const leadColumns = [
@@ -67,6 +69,9 @@ const formatDate = (value) => {
 };
 
 const formatLeadId = (lead) => {
+  if (lead.lead_code) {
+    return lead.lead_code;
+  }
   const raw = lead.created_at || '';
   const datePart = raw ? String(raw).slice(0, 10).replace(/-/g, '') : '00000000';
   const seq = String(lead.id ?? 0).padStart(5, '0');
@@ -94,15 +99,20 @@ const getDdayText = (value) => {
 function LeadsPage() {
   const [leads, setLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [customerContacts, setCustomerContacts] = useState([]);
   const [status, setStatus] = useState('loading');
   const [formData, setFormData] = useState({});
   const [customerForm, setCustomerForm] = useState({});
+  const [contactForm, setContactForm] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [formStatus, setFormStatus] = useState('');
   const [formErrorMessage, setFormErrorMessage] = useState('');
   const [customerQuery, setCustomerQuery] = useState('');
   const [customerListOpen, setCustomerListOpen] = useState(false);
   const [customerHighlightIndex, setCustomerHighlightIndex] = useState(-1);
+  const [contactQuery, setContactQuery] = useState('');
+  const [contactListOpen, setContactListOpen] = useState(false);
+  const [contactHighlightIndex, setContactHighlightIndex] = useState(-1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [page, setPage] = useState(1);
@@ -137,6 +147,7 @@ function LeadsPage() {
     } catch (error) {
       console.error(error);
       setStatus('error');
+      showToast('데이터를 불러오지 못했습니다.');
     }
   };
 
@@ -150,6 +161,27 @@ function LeadsPage() {
       setCustomers(data.customers || []);
     } catch (error) {
       console.error(error);
+      showToast('고객사 데이터를 불러오지 못했습니다.');
+    }
+  };
+
+  const loadCustomerContacts = async (customerId) => {
+    if (!customerId) {
+      setCustomerContacts([]);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/customer-contacts?customer_id=${customerId}`
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch customer contacts');
+      }
+      setCustomerContacts(data.contacts || []);
+    } catch (error) {
+      console.error(error);
+      setCustomerContacts([]);
     }
   };
 
@@ -171,29 +203,43 @@ function LeadsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (isModalOpen && formData.customer_id) {
+      loadCustomerContacts(formData.customer_id);
+    } else {
+      setCustomerContacts([]);
+    }
+  }, [formData.customer_id, isModalOpen]);
+
   const openCreateModal = () => {
     const defaultProjectId = '';
     setEditingId(null);
     setCustomerQuery('');
     setCustomerListOpen(false);
     setCustomerHighlightIndex(-1);
+    setContactQuery('');
+    setContactListOpen(false);
+    setContactHighlightIndex(-1);
     setFormData({
       customer_id: defaultProjectId,
+      contact_id: '',
+      customer_owner: '',
+      source: sourceOptions[0],
+      product_line: productLineOptions[0],
+      region: regionOptions[0],
+      segment: segmentOptions[0],
       content: '',
       lead_status: leadStatusOptions[0],
       next_action_date: '',
       next_action_content: ''
     });
     setCustomerForm({
-      company: '',
-      owner: '',
+      business_registration_number: ''
+    });
+    setContactForm({
+      name: '',
       contact: '',
-      email: '',
-      customer_owner: '',
-      source: sourceOptions[0],
-      product_line: productLineOptions[0],
-      region: regionOptions[0],
-      segment: segmentOptions[0]
+      email: ''
     });
     setFormStatus('');
     setFormErrorMessage('');
@@ -206,23 +252,29 @@ function LeadsPage() {
     setCustomerQuery(customer?.company || lead.company || '');
     setCustomerListOpen(false);
     setCustomerHighlightIndex(-1);
+    setContactQuery(lead.owner || '');
+    setContactListOpen(false);
+    setContactHighlightIndex(-1);
     setFormData({
       customer_id: lead.customer_id || '',
+      contact_id: lead.contact_id || '',
+      customer_owner: lead.customer_owner || '',
+      source: lead.source || sourceOptions[0],
+      product_line: lead.product_line || productLineOptions[0],
+      region: lead.region || regionOptions[0],
+      segment: lead.segment || segmentOptions[0],
       content: lead.content || '',
       lead_status: lead.lead_status || leadStatusOptions[0],
       next_action_date: formatDate(lead.next_action_date),
       next_action_content: lead.next_action_content || ''
     });
     setCustomerForm({
-      company: customer?.company || lead.company || '',
-      owner: customer?.owner || lead.owner || '',
-      contact: customer?.contact || lead.contact || '',
-      email: customer?.email || lead.email || '',
-      customer_owner: customer?.customer_owner || lead.customer_owner || '',
-      source: customer?.source || lead.source || sourceOptions[0],
-      product_line: customer?.product_line || lead.product_line || productLineOptions[0],
-      region: customer?.region || lead.region || regionOptions[0],
-      segment: customer?.segment || lead.segment || segmentOptions[0]
+      business_registration_number: customer?.business_registration_number || ''
+    });
+    setContactForm({
+      name: lead.owner || '',
+      contact: lead.contact || '',
+      email: lead.email || ''
     });
     setFormStatus('');
     setFormErrorMessage('');
@@ -249,35 +301,75 @@ function LeadsPage() {
     setCustomerQuery(value);
     setCustomerListOpen(true);
     setCustomerHighlightIndex(-1);
-    setFormData((prev) => ({ ...prev, customer_id: '' }));
+    setFormData((prev) => ({
+      ...prev,
+      customer_id: '',
+      contact_id: ''
+    }));
     setCustomerForm({
-      company: '',
-      owner: '',
-      contact: '',
-      email: '',
-      customer_owner: '',
-      source: sourceOptions[0],
-      product_line: productLineOptions[0],
-      region: regionOptions[0],
-      segment: segmentOptions[0]
+      business_registration_number: ''
     });
+    setContactQuery('');
+    setContactListOpen(false);
+    setContactHighlightIndex(-1);
+    setContactForm({
+      name: '',
+      contact: '',
+      email: ''
+    });
+    setCustomerContacts([]);
   };
 
   const handleCustomerSelect = (customer) => {
     setCustomerQuery(customer.company || '');
     setCustomerListOpen(false);
     setCustomerHighlightIndex(-1);
-    setFormData((prev) => ({ ...prev, customer_id: customer.id }));
+    setFormData((prev) => ({
+      ...prev,
+      customer_id: customer.id,
+      contact_id: ''
+    }));
     setCustomerForm({
-      company: customer.company || '',
-      owner: customer.owner || '',
-      contact: customer.contact || '',
-      email: customer.email || '',
-      customer_owner: customer.customer_owner || '',
-      source: customer.source || sourceOptions[0],
-      product_line: customer.product_line || productLineOptions[0],
-      region: customer.region || regionOptions[0],
-      segment: customer.segment || segmentOptions[0]
+      business_registration_number: customer.business_registration_number || ''
+    });
+    setContactQuery('');
+    setContactListOpen(false);
+    setContactHighlightIndex(-1);
+    setContactForm({
+      name: '',
+      contact: '',
+      email: ''
+    });
+    loadCustomerContacts(customer.id);
+  };
+
+  const handleContactInput = (value) => {
+    setContactQuery(value);
+    setContactListOpen(true);
+    setContactHighlightIndex(-1);
+    setFormData((prev) => ({
+      ...prev,
+      contact_id: ''
+    }));
+    setContactForm({
+      name: '',
+      contact: '',
+      email: ''
+    });
+  };
+
+  const handleContactSelect = (contact) => {
+    setContactQuery(contact.name || '');
+    setContactListOpen(false);
+    setContactHighlightIndex(-1);
+    setFormData((prev) => ({
+      ...prev,
+      contact_id: contact.id
+    }));
+    setContactForm({
+      name: contact.name || '',
+      contact: contact.contact || '',
+      email: contact.email || ''
     });
   };
 
@@ -289,13 +381,23 @@ function LeadsPage() {
     return customers.filter((customer) => String(customer.company || '').toLowerCase().includes(query));
   }, [customers, customerQuery]);
 
+  const filteredContacts = useMemo(() => {
+    const query = contactQuery.trim().toLowerCase();
+    if (!query) {
+      return customerContacts;
+    }
+    return customerContacts.filter((contact) =>
+      String(contact.name || '').toLowerCase().includes(query)
+    );
+  }, [customerContacts, contactQuery]);
+
   const submitLead = async () => {
     setFormStatus('saving');
     try {
       const customerId = formData.customer_id;
       if (!customerId) {
         setFormStatus('error');
-        setFormErrorMessage('고객을 선택해 주세요.');
+        setFormErrorMessage('고객사를 선택해 주세요.');
         return;
       }
 
@@ -319,11 +421,16 @@ function LeadsPage() {
       setCustomerForm({});
       setFormStatus('');
       setFormErrorMessage('');
-      showToast(editingId ? '리드가 수정되었습니다.' : '리드가 등록되었습니다.');
+      if (editingId) {
+        showToast(data.dealCreated ? '딜이 생성되었습니다.' : '리드가 수정되었습니다.');
+      } else {
+        showToast(data.dealCreated ? '딜이 추가되었습니다.' : '리드가 등록되었습니다.');
+      }
     } catch (error) {
       console.error(error);
       setFormStatus('error');
       setFormErrorMessage('저장에 실패했습니다.');
+      showToast('저장에 실패했습니다.');
     }
   };
 
@@ -397,7 +504,7 @@ function LeadsPage() {
   const filteredLeads = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return leads.filter((lead) => {
-      const matchesStatus = statusFilter === '전체' || lead.lead_status === statusFilter;
+      const matchesStatus = statusFilter === '전체' || statusFilter === '' || lead.lead_status === statusFilter;
       if (!query) {
         return matchesStatus;
       }
@@ -459,7 +566,7 @@ function LeadsPage() {
     <>
       <header className="content__header">
         <div className="content__header-row">
-          <h2>Leads</h2>
+          <h2>리드</h2>
           <div className="lead-header__right">
             <div className="lead-status-summary" aria-label="리드 상태 통계">
               <button
@@ -504,29 +611,41 @@ function LeadsPage() {
         </div>
       </header>
       <section className="content__section content__section--single">
-        <div className="content__card content__card--wide content__card--plain filter-card">
-          <div className="filter-row">
+        <div className="filter-row">
             <form className="project-form filter-form" onSubmit={(event) => event.preventDefault()}>
               <div className="filter-form__fields">
-                <label className="project-form__field" htmlFor="lead-status-filter">
-                  <select
-                    id="lead-status-filter"
-                    name="lead-status-filter"
-                    value={statusFilter}
-                    data-filled={statusFilter ? 'true' : 'false'}
-                    onChange={(event) => {
-                      setStatusFilter(event.target.value);
+              <label className="project-form__field project-form__field--has-clear" htmlFor="lead-status-filter">
+                <select
+                  id="lead-status-filter"
+                  name="lead-status-filter"
+                  value={statusFilter}
+                  data-filled={statusFilter ? 'true' : 'false'}
+                  onChange={(event) => {
+                    setStatusFilter(event.target.value);
+                    setPage(1);
+                  }}
+                >
+                  {['전체', ...leadStatusOptions].map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <span>리드상태</span>
+                {statusFilter && statusFilter !== '전체' && (
+                  <button
+                    className="select-clear"
+                    type="button"
+                    aria-label="리드상태 초기화"
+                    onClick={() => {
+                      setStatusFilter('');
                       setPage(1);
                     }}
                   >
-                    {['전체', ...leadStatusOptions].map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <span>리드상태</span>
-                </label>
+                    ×
+                  </button>
+                )}
+              </label>
                 <label className="project-form__field filter-form__field--wide" htmlFor="lead-search">
                   <input
                     id="lead-search"
@@ -545,18 +664,15 @@ function LeadsPage() {
             </form>
             <div className="filter-row__actions">
               <button className="project-form__submit" type="button" onClick={openCreateModal}>
-                리드 등록
+                등록
               </button>
             </div>
-          </div>
         </div>
       </section>
       <section className="content__section content__section--single">
         <div className="content__card content__card--wide">
           {status === 'loading' && <p className="table__status">불러오는 중...</p>}
-          {status === 'error' && (
-            <p className="table__status table__status--error">데이터를 불러오지 못했습니다.</p>
-          )}
+          {status === 'error' && null}
           {status === 'ready' && leads.length === 0 && <p className="table__status">데이터가 없습니다.</p>}
           {status === 'ready' && leads.length > 0 && sortedLeads.length === 0 && (
             <p className="table__status">조건에 맞는 데이터가 없습니다.</p>
@@ -612,7 +728,8 @@ function LeadsPage() {
                           const status = lead.lead_status;
                           const dday =
                             status === '신규' || status === '접촉중' ? getDdayText(lead[column.key]) : '';
-                          const urgent = dday.startsWith('D-') && Number(dday.slice(2)) <= 5;
+                          const urgent =
+                            (dday.startsWith('D-') && Number(dday.slice(2)) <= 5) || dday.startsWith('D+');
                           return (
                             <td key={column.key} className={cellClassName}>
                               {formatted}
@@ -686,7 +803,7 @@ function LeadsPage() {
               </table>
             </div>
           )}
-          {status === 'ready' && (
+          {status === 'ready' && sortedLeads.length > 0 && (
             <div className="pagination">
               <button
                 className="icon-button"
@@ -744,7 +861,7 @@ function LeadsPage() {
             <form className="project-form modal__body lead-form" onSubmit={handleSubmit}>
               <div className="lead-form__grid">
                 <div className="lead-form__column">
-                  <label className="project-form__field lead-customer-select" htmlFor="lead-customer-search">
+                  <label className="project-form__field lead-customer-select lead-customer-select--company" htmlFor="lead-customer-search">
                     <input
                       id="lead-customer-search"
                       name="lead-customer-search"
@@ -805,7 +922,7 @@ function LeadsPage() {
                               onMouseDown={(event) => event.preventDefault()}
                               onClick={() => handleCustomerSelect(customer)}
                             >
-                              {customer.company}
+                              {customer.company} ({customer.business_registration_number || '-'})
                             </button>
                           ))
                         ) : (
@@ -817,7 +934,11 @@ function LeadsPage() {
                   {customerFields
                     .filter((field) => field.name !== 'company')
                     .map((field) => (
-                      <label className="project-form__field" htmlFor={`lead-customer-${field.name}`} key={field.name}>
+                      <label
+                        className="project-form__field lead-customer-readonly"
+                        htmlFor={`lead-customer-${field.name}`}
+                        key={field.name}
+                      >
                         {field.type === 'select' ? (
                           <select
                             id={`lead-customer-${field.name}`}
@@ -839,16 +960,104 @@ function LeadsPage() {
                             type={field.type}
                             placeholder=" "
                             value={customerForm[field.name] ?? ''}
+                            data-filled={customerForm[field.name] ? 'true' : 'false'}
                             readOnly
                           />
                         )}
                         <span>{field.label}</span>
                       </label>
                     ))}
+                  <label className="project-form__field lead-customer-select lead-customer-select--contact" htmlFor="lead-contact-search">
+                    <input
+                      id="lead-contact-search"
+                      name="lead-contact-search"
+                      type="text"
+                      placeholder=" "
+                      value={contactQuery}
+                      onChange={(event) => handleContactInput(event.target.value)}
+                      onFocus={() => {
+                        if (formData.customer_id) {
+                          setContactListOpen(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setContactListOpen(false), 120);
+                      }}
+                      onKeyDown={(event) => {
+                        if (!contactListOpen) {
+                          return;
+                        }
+                        if (event.key === 'ArrowDown') {
+                          event.preventDefault();
+                          setContactHighlightIndex((prev) =>
+                            Math.min(filteredContacts.length - 1, prev + 1)
+                          );
+                        } else if (event.key === 'ArrowUp') {
+                          event.preventDefault();
+                          setContactHighlightIndex((prev) => Math.max(-1, prev - 1));
+                        } else if (event.key === 'Enter') {
+                          if (contactHighlightIndex >= 0) {
+                            event.preventDefault();
+                            const selected = filteredContacts[contactHighlightIndex];
+                            if (selected) {
+                              handleContactSelect(selected);
+                            }
+                          }
+                        } else if (event.key === 'Escape') {
+                          setContactListOpen(false);
+                        }
+                      }}
+                      disabled={!formData.customer_id}
+                    />
+                    <span>담당자</span>
+                    {formData.customer_id && contactListOpen && (
+                      <div className="lead-customer-select__list" role="listbox">
+                        {filteredContacts.length > 0 ? (
+                          filteredContacts.map((contact, index) => (
+                            <button
+                              type="button"
+                              key={contact.id}
+                              className={`lead-customer-select__option${
+                                index === contactHighlightIndex ? ' lead-customer-select__option--active' : ''
+                              }`}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => handleContactSelect(contact)}
+                            >
+                              {contact.name} ({contact.contact || '-'})
+                            </button>
+                          ))
+                        ) : (
+                          <div className="lead-customer-select__empty">결과 없음</div>
+                        )}
+                      </div>
+                    )}
+                  </label>
+                  {contactDetailFields.map((field) => (
+                    <label
+                      className="project-form__field lead-customer-readonly"
+                      htmlFor={`lead-contact-${field.name}`}
+                      key={field.name}
+                    >
+                      <input
+                        id={`lead-contact-${field.name}`}
+                        name={field.name}
+                        type={field.type}
+                        placeholder=" "
+                        value={contactForm[field.name] ?? ''}
+                        data-filled={contactForm[field.name] ? 'true' : 'false'}
+                        readOnly
+                      />
+                      <span>{field.label}</span>
+                    </label>
+                  ))}
                 </div>
                 <div className="lead-form__column">
                   {leadFields.map((field) => (
-                    <label className="project-form__field" htmlFor={`lead-${field.name}`} key={field.name}>
+                    <label
+                      className={`project-form__field${field.type === 'select' ? ' project-form__field--has-clear' : ''}`}
+                      htmlFor={`lead-${field.name}`}
+                      key={field.name}
+                    >
                       {field.type === 'textarea' ? (
                         <textarea
                           id={`lead-${field.name}`}
@@ -858,21 +1067,34 @@ function LeadsPage() {
                           value={formData[field.name] ?? ''}
                           onChange={(event) => handleChange(field.name, event.target.value)}
                         />
-                      ) : field.type === 'select' ? (
-                        <select
-                          id={`lead-${field.name}`}
-                          name={field.name}
-                          value={formData[field.name] ?? ''}
-                          data-filled={formData[field.name] ? 'true' : 'false'}
-                          onChange={(event) => handleChange(field.name, event.target.value)}
+                  ) : field.type === 'select' ? (
+                    <>
+                      <select
+                        id={`lead-${field.name}`}
+                        name={field.name}
+                        value={formData[field.name] ?? ''}
+                        data-filled={formData[field.name] ? 'true' : 'false'}
+                        onChange={(event) => handleChange(field.name, event.target.value)}
+                      >
+                        <option value="" hidden />
+                        {field.options?.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                      {formData[field.name] && (
+                        <button
+                          className="select-clear"
+                          type="button"
+                          aria-label={`${field.label} 초기화`}
+                          onClick={() => handleChange(field.name, '')}
                         >
-                          {field.options?.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
+                          ×
+                        </button>
+                      )}
+                    </>
+                  ) : (
                         <input
                           id={`lead-${field.name}`}
                           name={field.name}
@@ -907,9 +1129,7 @@ function LeadsPage() {
                   </button>
                 )}
               </div>
-              {formStatus === 'error' && (
-                <p className="table__status table__status--error">{formErrorMessage}</p>
-              )}
+      {formStatus === 'error' && null}
             </form>
           </div>
         </div>

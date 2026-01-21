@@ -226,6 +226,7 @@ function ProjectsPage() {
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [formStatus, setFormStatus] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [sortState, setSortState] = useState({ key: null, direction: null });
@@ -252,6 +253,14 @@ function ProjectsPage() {
   });
   const pageSize = 10;
 
+  const showToast = (message) => {
+    setToastMessage(message);
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => {
+      setToastMessage('');
+    }, 1500);
+  };
+
   const loadProjects = async () => {
     try {
       setStatus('loading');
@@ -266,6 +275,7 @@ function ProjectsPage() {
     } catch (error) {
       console.error(error);
       setStatus('error');
+      showToast('데이터를 불러오지 못했습니다.');
     }
   };
 
@@ -344,6 +354,7 @@ function ProjectsPage() {
     } catch (error) {
       console.error(error);
       setFormStatus('error');
+      showToast('저장에 실패했습니다.');
     }
   };
 
@@ -560,7 +571,7 @@ function ProjectsPage() {
               <span>완료 프로젝트 포함</span>
             </label>
             <button className="project-form__submit" type="button" onClick={openCreateModal}>
-              프로젝트 등록
+              등록
             </button>
           </div>
         </div>
@@ -777,9 +788,7 @@ function ProjectsPage() {
         </div>
         <div className="content__card content__card--wide">
           {status === 'loading' && <p className="table__status">불러오는 중...</p>}
-          {status === 'error' && (
-            <p className="table__status table__status--error">데이터를 불러오지 못했습니다.</p>
-          )}
+          {status === 'error' && null}
           {status === 'ready' && projects.length === 0 && (
             <p className="table__status">데이터가 없습니다.</p>
           )}
@@ -858,7 +867,7 @@ function ProjectsPage() {
               </table>
             </div>
           )}
-          {status === 'ready' && projects.length > pageSize && (
+          {status === 'ready' && projects.length > 0 && (
             <div className="pagination">
               <button
                 className="icon-button"
@@ -915,7 +924,11 @@ function ProjectsPage() {
             </div>
             <form className="project-form modal__body" onSubmit={handleSubmit}>
               {projectFields.map((field) => (
-                <label className="project-form__field" htmlFor={`project-${field.name}`} key={field.name}>
+                <label
+                  className={`project-form__field${field.type === 'select' ? ' project-form__field--has-clear' : ''}`}
+                  htmlFor={`project-${field.name}`}
+                  key={field.name}
+                >
                   {field.type === 'textarea' ? (
                     <textarea
                       id={`project-${field.name}`}
@@ -926,20 +939,32 @@ function ProjectsPage() {
                       onChange={(event) => handleChange(field.name, event.target.value)}
                     />
                   ) : field.type === 'select' ? (
-                    <select
-                      id={`project-${field.name}`}
-                      name={field.name}
-                      value={formData[field.name] ?? ''}
-                      data-filled={formData[field.name] ? 'true' : 'false'}
-                      onChange={(event) => handleChange(field.name, event.target.value)}
-                    >
-                      <option value="" disabled hidden />
-                      {field.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        id={`project-${field.name}`}
+                        name={field.name}
+                        value={formData[field.name] ?? ''}
+                        data-filled={formData[field.name] ? 'true' : 'false'}
+                        onChange={(event) => handleChange(field.name, event.target.value)}
+                      >
+                        <option value="" hidden />
+                        {field.options.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                      {formData[field.name] && (
+                        <button
+                          className="select-clear"
+                          type="button"
+                          aria-label={`${field.label} 초기화`}
+                          onClick={() => handleChange(field.name, '')}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </>
                   ) : (
                     <input
                       id={`project-${field.name}`}
@@ -973,9 +998,7 @@ function ProjectsPage() {
                   </button>
                 )}
               </div>
-              {formStatus === 'error' && (
-                <p className="table__status table__status--error">저장에 실패했습니다.</p>
-              )}
+              {formStatus === 'error' && null}
             </form>
           </div>
         </div>
@@ -986,6 +1009,7 @@ function ProjectsPage() {
         onConfirm={confirmState.onConfirm || handleConfirmCancel}
         onCancel={handleConfirmCancel}
       />
+      {toastMessage && <div className="toast">{toastMessage}</div>}
     </>
   );
 }

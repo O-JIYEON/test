@@ -10,6 +10,7 @@ function UsersPage() {
   const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('loading');
   const [formStatus, setFormStatus] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
   const [sortState, setSortState] = useState({ key: null, direction: null });
   const [confirmState, setConfirmState] = useState({
     open: false,
@@ -19,6 +20,14 @@ function UsersPage() {
 
   const editableColumns = columns.filter((column) => !column.isAutoIncrement);
   const idColumn = columns.find((column) => column.name === 'id')?.name || 'id';
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => {
+      setToastMessage('');
+    }, 1500);
+  };
 
   const loadUsers = async () => {
     try {
@@ -32,6 +41,7 @@ function UsersPage() {
     } catch (error) {
       console.error(error);
       setStatus('error');
+      showToast('데이터를 불러오지 못했습니다.');
     }
   };
 
@@ -53,6 +63,7 @@ function UsersPage() {
         console.error(error);
         if (isMounted) {
           setStatus('error');
+          showToast('데이터를 불러오지 못했습니다.');
         }
       }
     }
@@ -95,6 +106,7 @@ function UsersPage() {
     } catch (error) {
       console.error(error);
       setFormStatus('error');
+      showToast('저장에 실패했습니다.');
     }
   };
 
@@ -237,19 +249,13 @@ function UsersPage() {
                 </button>
               )}
             </div>
-            {formStatus === 'error' && (
-              <p className="table__status table__status--error">저장에 실패했습니다.</p>
-            )}
+            {formStatus === 'error' && null}
           </form>
         </div>
         <div className="content__card content__card--form">
           <h3>사용자 목록</h3>
           {status === 'loading' && <p className="table__status">불러오는 중...</p>}
-          {status === 'error' && (
-            <p className="table__status table__status--error">
-              데이터를 불러오지 못했습니다.
-            </p>
-          )}
+          {status === 'error' && null}
           {status === 'ready' && users.length === 0 && (
             <p className="table__status">데이터가 없습니다.</p>
           )}
@@ -323,6 +329,7 @@ function UsersPage() {
         onConfirm={confirmState.onConfirm || handleConfirmCancel}
         onCancel={handleConfirmCancel}
       />
+      {toastMessage && <div className="toast">{toastMessage}</div>}
     </>
   );
 }

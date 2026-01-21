@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import menuItems from './data/menuItems';
 import DashboardPage from './pages/dashboard/DashboardPage';
+import DealsPage from './pages/deals/DealsPage';
+import ActivitiesPage from './pages/activities/ActivitiesPage';
 import LeadsPage from './pages/leads/LeadsPage';
 import MenuPage from './pages/menu/MenuPage';
 import ProjectsPage from './pages/projects/ProjectsPage';
@@ -42,6 +44,12 @@ function App() {
             }
             if (item.path === '/customers') {
               return <Route key={item.path} path={item.path} element={<CustomersPage />} />;
+            }
+            if (item.path === '/deals') {
+              return <Route key={item.path} path={item.path} element={<DealsPage />} />;
+            }
+            if (item.path === '/activities') {
+              return <Route key={item.path} path={item.path} element={<ActivitiesPage />} />;
             }
             if (item.path === '/period-3') {
               return <Route key={item.path} path={item.path} element={<LeadsPage />} />;
