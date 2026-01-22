@@ -36,7 +36,8 @@ const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'java',
   password: process.env.DB_PASSWORD || '0000',
-  database: process.env.DB_NAME || 'test'
+  database: process.env.DB_NAME || 'test',
+  timezone: 'Z'
 };
 
 function normalizeDateValue(value) {
@@ -249,6 +250,42 @@ async function getCustomerContactColumns() {
        FROM information_schema.columns
        WHERE table_schema = ? AND table_name = ?`,
       [dbConfig.database, 'customer_contacts']
+    );
+    return rows.map((row) => ({
+      name: row.name,
+      isAutoIncrement: String(row.extra).includes('auto_increment')
+    }));
+  } finally {
+    await connection.end();
+  }
+}
+
+async function getLookupCategoryColumns() {
+  const connection = await mysql.createConnection(dbConfig);
+  try {
+    const [rows] = await connection.query(
+      `SELECT COLUMN_NAME AS name, EXTRA AS extra
+       FROM information_schema.columns
+       WHERE table_schema = ? AND table_name = ?`,
+      [dbConfig.database, 'lookup_categories']
+    );
+    return rows.map((row) => ({
+      name: row.name,
+      isAutoIncrement: String(row.extra).includes('auto_increment')
+    }));
+  } finally {
+    await connection.end();
+  }
+}
+
+async function getLookupValueColumns() {
+  const connection = await mysql.createConnection(dbConfig);
+  try {
+    const [rows] = await connection.query(
+      `SELECT COLUMN_NAME AS name, EXTRA AS extra
+       FROM information_schema.columns
+       WHERE table_schema = ? AND table_name = ?`,
+      [dbConfig.database, 'lookup_values']
     );
     return rows.map((row) => ({
       name: row.name,
@@ -626,6 +663,7 @@ async function getDeals(req, res) {
         ) cc_min ON cc.id = cc_min.min_id
       ) AS primary_contact ON primary_contact.customer_id = customers.id
       WHERE deal.deleted_at IS NULL
+        AND lead.deleted_at IS NULL
       ORDER BY deal.id DESC`
     );
     res.json({ deals: rows });
@@ -784,6 +822,7 @@ async function deleteDeal(req, res) {
       'UPDATE `deal` SET deleted_at = NOW() WHERE id = ?',
       [id]
     );
+    await connection.query('UPDATE `activity_logs` SET deleted_at = NOW() WHERE deal_id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
     console.error('Failed to delete deal:', error);
@@ -1106,6 +1145,274 @@ async function deleteCustomerContact(req, res) {
   }
 }
 
+async function getLookupCategories(req, res) {
+  let connection;
+  try {
+    connection = await mysql.createConnection(dbConfig);
+    const [rows] = await connection.query(
+      `SELECT
+        id,
+        label,
+        created_at,
+        updated_at
+      FROM \`lookup_categories\`
+      ORDER BY id DESC`
+    );
+    res.json({ categories: rows });
+  } catch (error) {
+    console.error('Failed to fetch lookup categories:', error);
+    res.status(500).json({ error: 'Failed to fetch lookup categories' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function createLookupCategory(req, res) {
+  let connection;
+  try {
+    const columns = await getLookupCategoryColumns();
+    const writableColumns = columns.filter(
+      (col) => !col.isAutoIncrement && col.name !== 'created_at' && col.name !== 'updated_at'
+    );
+    const payload = req.body || {};
+    const entries = writableColumns
+      .map((col) => col.name)
+      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
+      .map((name) => ({ name, value: payload[name] }));
+
+    if (entries.length === 0) {
+      res.status(400).json({ error: 'No valid fields provided' });
+      return;
+    }
+
+    const fieldNames = entries.map((entry) => `\`${entry.name}\``).join(', ');
+    const placeholders = entries.map(() => '?').join(', ');
+    const values = entries.map((entry) => entry.value);
+
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query(
+      `INSERT INTO \`lookup_categories\` (${fieldNames}) VALUES (${placeholders})`,
+      values
+    );
+    res.status(201).json({ id: result.insertId });
+  } catch (error) {
+    console.error('Failed to create lookup category:', error);
+    res.status(500).json({ error: 'Failed to create lookup category' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function updateLookupCategory(req, res) {
+  let connection;
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ error: 'Missing category id' });
+      return;
+    }
+    const columns = await getLookupCategoryColumns();
+    const writableColumns = columns.filter(
+      (col) => !col.isAutoIncrement && col.name !== 'created_at' && col.name !== 'updated_at'
+    );
+    const payload = req.body || {};
+    const updates = writableColumns
+      .map((col) => col.name)
+      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
+      .map((name) => ({ name, value: payload[name] }));
+
+    if (updates.length === 0) {
+      res.status(400).json({ error: 'No valid fields provided' });
+      return;
+    }
+
+    const setClause = updates.map((entry) => `\`${entry.name}\` = ?`).join(', ');
+    const values = updates.map((entry) => entry.value);
+    values.push(id);
+
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query(
+      `UPDATE \`lookup_categories\` SET ${setClause} WHERE id = ?`,
+      values
+    );
+    res.json({ updated: result.affectedRows });
+  } catch (error) {
+    console.error('Failed to update lookup category:', error);
+    res.status(500).json({ error: 'Failed to update lookup category' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function deleteLookupCategory(req, res) {
+  let connection;
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ error: 'Missing category id' });
+      return;
+    }
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query('DELETE FROM `lookup_categories` WHERE id = ?', [id]);
+    res.json({ deleted: result.affectedRows });
+  } catch (error) {
+    console.error('Failed to delete lookup category:', error);
+    res.status(500).json({ error: 'Failed to delete lookup category' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function getLookupValues(req, res) {
+  let connection;
+  try {
+    const { category_id } = req.query;
+    connection = await mysql.createConnection(dbConfig);
+    const conditions = [];
+    const params = [];
+
+    if (category_id) {
+      conditions.push('c.id = ?');
+      params.push(category_id);
+    }
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const [rows] = await connection.query(
+      `SELECT
+        v.id,
+        v.category_id,
+        c.label AS category_label,
+        v.label,
+        v.probability,
+        v.sort_order,
+        v.created_at,
+        v.updated_at
+      FROM \`lookup_values\` v
+      INNER JOIN \`lookup_categories\` c ON c.id = v.category_id
+      ${whereClause}
+      ORDER BY v.sort_order ASC, v.id ASC`,
+      params
+    );
+    res.json({ values: rows });
+  } catch (error) {
+    console.error('Failed to fetch lookup values:', error);
+    res.status(500).json({ error: 'Failed to fetch lookup values' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function createLookupValue(req, res) {
+  let connection;
+  try {
+    const columns = await getLookupValueColumns();
+    const writableColumns = columns.filter(
+      (col) => !col.isAutoIncrement && col.name !== 'created_at' && col.name !== 'updated_at'
+    );
+    const payload = req.body || {};
+    const entries = writableColumns
+      .map((col) => col.name)
+      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
+      .map((name) => ({ name, value: payload[name] }));
+
+    if (entries.length === 0) {
+      res.status(400).json({ error: 'No valid fields provided' });
+      return;
+    }
+
+    const fieldNames = entries.map((entry) => `\`${entry.name}\``).join(', ');
+    const placeholders = entries.map(() => '?').join(', ');
+    const values = entries.map((entry) => entry.value);
+
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query(
+      `INSERT INTO \`lookup_values\` (${fieldNames}) VALUES (${placeholders})`,
+      values
+    );
+    res.status(201).json({ id: result.insertId });
+  } catch (error) {
+    console.error('Failed to create lookup value:', error);
+    res.status(500).json({ error: 'Failed to create lookup value' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function updateLookupValue(req, res) {
+  let connection;
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ error: 'Missing value id' });
+      return;
+    }
+    const columns = await getLookupValueColumns();
+    const writableColumns = columns.filter(
+      (col) => !col.isAutoIncrement && col.name !== 'created_at' && col.name !== 'updated_at'
+    );
+    const payload = req.body || {};
+    const updates = writableColumns
+      .map((col) => col.name)
+      .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
+      .map((name) => ({ name, value: payload[name] }));
+
+    if (updates.length === 0) {
+      res.status(400).json({ error: 'No valid fields provided' });
+      return;
+    }
+
+    const setClause = updates.map((entry) => `\`${entry.name}\` = ?`).join(', ');
+    const values = updates.map((entry) => entry.value);
+    values.push(id);
+
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query(
+      `UPDATE \`lookup_values\` SET ${setClause} WHERE id = ?`,
+      values
+    );
+    res.json({ updated: result.affectedRows });
+  } catch (error) {
+    console.error('Failed to update lookup value:', error);
+    res.status(500).json({ error: 'Failed to update lookup value' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function deleteLookupValue(req, res) {
+  let connection;
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ error: 'Missing value id' });
+      return;
+    }
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query('DELETE FROM `lookup_values` WHERE id = ?', [id]);
+    res.json({ deleted: result.affectedRows });
+  } catch (error) {
+    console.error('Failed to delete lookup value:', error);
+    res.status(500).json({ error: 'Failed to delete lookup value' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
 async function getActivityLogs(req, res) {
   let connection;
   try {
@@ -1121,10 +1428,15 @@ async function getActivityLogs(req, res) {
         activity_logs.next_action_date,
         activity_logs.next_action_content,
         lead.lead_code,
-        deal.deal_code
+        deal.deal_code,
+        customers.company
       FROM \`activity_logs\`
       LEFT JOIN \`lead\` ON lead.id = activity_logs.lead_id
       LEFT JOIN \`deal\` ON deal.id = activity_logs.deal_id
+      LEFT JOIN \`customers\` ON customers.id = lead.customer_id
+      WHERE activity_logs.deleted_at IS NULL
+        AND (activity_logs.lead_id IS NULL OR lead.deleted_at IS NULL)
+        AND (activity_logs.deal_id IS NULL OR deal.deleted_at IS NULL)
       ORDER BY activity_logs.id DESC`
     );
     res.json({ logs: rows });
@@ -1352,6 +1664,8 @@ async function deleteLead(req, res) {
       await createActivityLog(connection, leadLogPayload);
     }
     const [result] = await connection.query('UPDATE `lead` SET deleted_at = NOW() WHERE id = ?', [id]);
+    await connection.query('UPDATE `deal` SET deleted_at = NOW() WHERE lead_id = ?', [id]);
+    await connection.query('UPDATE `activity_logs` SET deleted_at = NOW() WHERE lead_id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
     console.error('Failed to delete lead:', error);
@@ -1399,6 +1713,14 @@ app.get('/api/customer-contacts', getCustomerContacts);
 app.post('/api/customer-contacts', createCustomerContact);
 app.put('/api/customer-contacts/:id', updateCustomerContact);
 app.delete('/api/customer-contacts/:id', deleteCustomerContact);
+app.get('/api/lookup-categories', getLookupCategories);
+app.post('/api/lookup-categories', createLookupCategory);
+app.put('/api/lookup-categories/:id', updateLookupCategory);
+app.delete('/api/lookup-categories/:id', deleteLookupCategory);
+app.get('/api/lookup-values', getLookupValues);
+app.post('/api/lookup-values', createLookupValue);
+app.put('/api/lookup-values/:id', updateLookupValue);
+app.delete('/api/lookup-values/:id', deleteLookupValue);
 app.get('/api/activity-logs', getActivityLogs);
 app.get('/api/deals', getDeals);
 app.post('/api/deals', createDeal);

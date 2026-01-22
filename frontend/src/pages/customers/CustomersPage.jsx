@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
 const API_BASE = `http://${window.location.hostname}:5001`;
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const customerFields = [
   { name: 'company', label: '회사명', type: 'text' },
@@ -38,19 +44,14 @@ const formatDate = (value) => {
   if (!value) {
     return '';
   }
-  const text = String(value).replace('T', ' ');
-  if (text.length >= 16) {
-    return text.slice(0, 16);
-  }
-  return text.length >= 10 ? text.slice(0, 10) : text;
+  return dayjs.utc(value).tz('Asia/Seoul').format('YYYY-MM-DD HH:mm');
 };
 
 const formatDateOnly = (value) => {
   if (!value) {
     return '';
   }
-  const text = String(value);
-  return text.length >= 10 ? text.slice(0, 10) : text;
+  return dayjs.utc(value).tz('Asia/Seoul').format('YYYY-MM-DD');
 };
 
 function CustomersPage() {
@@ -650,9 +651,7 @@ function CustomersPage() {
                       .filter((column) => !column.hidden)
                       .map((column) => {
                         const headerClassName =
-                          column.key === 'name' || column.key === 'created_at'
-                            ? 'customer-table__hide'
-                            : '';
+                          column.key === 'created_at' ? 'customer-table__hide' : '';
                         return (
                           <th key={column.key} className={headerClassName}>
                             {column.label}
@@ -672,9 +671,7 @@ function CustomersPage() {
                         .filter((column) => !column.hidden)
                         .map((column) => {
                           const cellClassName =
-                            column.key === 'name' || column.key === 'created_at'
-                              ? 'customer-table__hide'
-                              : '';
+                            column.key === 'created_at' ? 'customer-table__hide' : '';
                           if (column.key === 'created_at' || column.key === 'updated_at') {
                             return (
                               <td key={column.key} className={cellClassName}>

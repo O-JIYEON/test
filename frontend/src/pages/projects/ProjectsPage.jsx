@@ -77,7 +77,17 @@ const formatDate = (value) => {
     return '';
   }
   const text = String(value);
-  return text.length >= 10 ? text.slice(0, 10) : text;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return text;
+  }
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) {
+    return text.slice(0, 10);
+  }
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
 
 const normalizeDateInput = (value) => formatDate(value);
@@ -102,7 +112,7 @@ const parseDate = (value) => {
     return null;
   }
   const normalized = formatDate(value);
-  const date = new Date(`${normalized}T00:00:00`);
+  const date = new Date(`${normalized}T00:00:00Z`);
   return Number.isNaN(date.getTime()) ? null : date;
 };
 

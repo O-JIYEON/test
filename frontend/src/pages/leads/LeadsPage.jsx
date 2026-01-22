@@ -3,11 +3,11 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 
 const API_BASE = `http://${window.location.hostname}:5001`;
 
-const leadStatusOptions = ['신규', '접촉중', '딜전환', '폐기', '보류'];
-const sourceOptions = ['전체', '문의(웹/매일)', '소개', '전시/세미나', '재접촉', '콜드', '파트너'];
-const productLineOptions = ['전체', 'SI(프로젝트)', '유지보수', 'PoC/데모', '구독/라이센스', 'HW+SW'];
-const regionOptions = ['전체', '수도권', '영남', '호남', '충청', '강원', '제주', '해외'];
-const segmentOptions = ['전체', 'Enterprise', 'SMB', '공공', '제조', '에너지', '조선/해양', '건설'];
+const defaultLeadStatusOptions = ['신규', '접촉중', '딜전환', '폐기', '보류'];
+const defaultSourceOptions = ['문의(웹/매일)', '소개', '전시/세미나', '재접촉', '콜드', '파트너'];
+const defaultProductLineOptions = ['SI(프로젝트)', '유지보수', 'PoC/데모', '구독/라이센스', 'HW+SW'];
+const defaultRegionOptions = ['수도권', '영남', '호남', '충청', '강원', '제주', '해외'];
+const defaultSegmentOptions = ['Enterprise', 'SMB', '공공', '제조', '에너지', '조선/해양', '건설'];
 
 const customerFields = [
   { name: 'business_registration_number', label: '사업자 등록증번호', type: 'text' }
@@ -18,17 +18,17 @@ const contactDetailFields = [
   { name: 'email', label: '이메일', type: 'text' }
 ];
 
-const leadFields = [
+const leadFieldConfig = [
   { name: 'customer_owner', label: '담당자(영업)', type: 'text' },
-  { name: 'source', label: '유입소스', type: 'select', options: sourceOptions },
-  { name: 'product_line', label: '제품라인', type: 'select', options: productLineOptions },
-  { name: 'region', label: '지역', type: 'select', options: regionOptions },
-  { name: 'segment', label: '세그먼트', type: 'select', options: segmentOptions },
+  { name: 'source', label: '유입소스', type: 'select', category: '유입소스' },
+  { name: 'product_line', label: '제품라인', type: 'select', category: '제품라인' },
+  { name: 'region', label: '지역', type: 'select', category: '지역' },
+  { name: 'segment', label: '세그먼트', type: 'select', category: '세그먼트' },
   {
     name: 'lead_status',
     label: '리드상태',
     type: 'select',
-    options: leadStatusOptions
+    category: '리드상태'
   },
   { name: 'content', label: '내용', type: 'textarea' },
   { name: 'next_action_date', label: '다음액션일', type: 'date' },
@@ -37,6 +37,7 @@ const leadFields = [
 
 const leadColumns = [
   { key: 'id', label: 'LeadId' },
+  { key: 'created_at', label: '유입일자' },
   { key: 'company', label: '회사명' },
   { key: 'owner', label: '담당자' },
   { key: 'contact', label: '연락처' },
@@ -65,6 +66,12 @@ const formatDate = (value) => {
     return '';
   }
   const text = String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return text;
+  }
+  if (text.includes('T') || text.includes(' ')) {
+    return text.slice(0, 10);
+  }
   return text.length >= 10 ? text.slice(0, 10) : text;
 };
 
@@ -73,7 +80,7 @@ const formatLeadId = (lead) => {
     return lead.lead_code;
   }
   const raw = lead.created_at || '';
-  const datePart = raw ? String(raw).slice(0, 10).replace(/-/g, '') : '00000000';
+  const datePart = raw ? formatDate(raw).replace(/-/g, '') : '00000000';
   const seq = String(lead.id ?? 0).padStart(5, '0');
   return `${datePart}-L${seq}`;
 };
@@ -100,6 +107,7 @@ function LeadsPage() {
   const [leads, setLeads] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [customerContacts, setCustomerContacts] = useState([]);
+  const [lookupValues, setLookupValues] = useState([]);
   const [status, setStatus] = useState('loading');
   const [formData, setFormData] = useState({});
   const [customerForm, setCustomerForm] = useState({});
@@ -133,6 +141,55 @@ function LeadsPage() {
     }, {});
   }, [customers]);
 
+  const lookupOptions = useMemo(() => {
+    const map = lookupValues.reduce((acc, value) => {
+      const key = value.category_label || '';
+      if (!key) {
+        return acc;
+      }
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(value.label);
+      return acc;
+    }, {});
+    return map;
+  }, [lookupValues]);
+
+  const sourceOptions = lookupOptions['유입소스']?.length ? lookupOptions['유입소스'] : defaultSourceOptions;
+  const productLineOptions = lookupOptions['제품라인']?.length
+    ? lookupOptions['제품라인']
+    : defaultProductLineOptions;
+  const regionOptions = lookupOptions['지역']?.length ? lookupOptions['지역'] : defaultRegionOptions;
+  const segmentOptions = lookupOptions['세그먼트']?.length ? lookupOptions['세그먼트'] : defaultSegmentOptions;
+  const leadStatusOptions = lookupOptions['리드상태']?.length
+    ? lookupOptions['리드상태']
+    : defaultLeadStatusOptions;
+
+  const leadFields = useMemo(() => {
+    return leadFieldConfig.map((field) => {
+      if (field.type !== 'select') {
+        return field;
+      }
+      if (field.category === '유입소스') {
+        return { ...field, options: sourceOptions };
+      }
+      if (field.category === '제품라인') {
+        return { ...field, options: productLineOptions };
+      }
+      if (field.category === '지역') {
+        return { ...field, options: regionOptions };
+      }
+      if (field.category === '세그먼트') {
+        return { ...field, options: segmentOptions };
+      }
+      if (field.category === '리드상태') {
+        return { ...field, options: leadStatusOptions };
+      }
+      return field;
+    });
+  }, [sourceOptions, productLineOptions, regionOptions, segmentOptions, leadStatusOptions]);
+
   const loadLeads = async () => {
     try {
       setStatus('loading');
@@ -165,6 +222,20 @@ function LeadsPage() {
     }
   };
 
+  const loadLookupValues = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/lookup-values`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch lookup values');
+      }
+      setLookupValues(data.values || []);
+    } catch (error) {
+      console.error(error);
+      showToast('설정 값을 불러오지 못했습니다.');
+    }
+  };
+
   const loadCustomerContacts = async (customerId) => {
     if (!customerId) {
       setCustomerContacts([]);
@@ -189,7 +260,7 @@ function LeadsPage() {
     let isMounted = true;
     async function fetchAll() {
       try {
-        await Promise.all([loadLeads(), loadCustomers()]);
+        await Promise.all([loadLeads(), loadCustomers(), loadLookupValues()]);
       } catch (error) {
         console.error(error);
         if (isMounted) {
@@ -224,12 +295,12 @@ function LeadsPage() {
       customer_id: defaultProjectId,
       contact_id: '',
       customer_owner: '',
-      source: sourceOptions[0],
-      product_line: productLineOptions[0],
-      region: regionOptions[0],
-      segment: segmentOptions[0],
+      source: sourceOptions[0] || '',
+      product_line: productLineOptions[0] || '',
+      region: regionOptions[0] || '',
+      segment: segmentOptions[0] || '',
       content: '',
-      lead_status: leadStatusOptions[0],
+      lead_status: leadStatusOptions[0] || '',
       next_action_date: '',
       next_action_content: ''
     });
@@ -259,12 +330,12 @@ function LeadsPage() {
       customer_id: lead.customer_id || '',
       contact_id: lead.contact_id || '',
       customer_owner: lead.customer_owner || '',
-      source: lead.source || sourceOptions[0],
-      product_line: lead.product_line || productLineOptions[0],
-      region: lead.region || regionOptions[0],
-      segment: lead.segment || segmentOptions[0],
+      source: lead.source || sourceOptions[0] || '',
+      product_line: lead.product_line || productLineOptions[0] || '',
+      region: lead.region || regionOptions[0] || '',
+      segment: lead.segment || segmentOptions[0] || '',
       content: lead.content || '',
-      lead_status: lead.lead_status || leadStatusOptions[0],
+      lead_status: lead.lead_status || leadStatusOptions[0] || '',
       next_action_date: formatDate(lead.next_action_date),
       next_action_content: lead.next_action_content || ''
     });
@@ -711,7 +782,11 @@ function LeadsPage() {
                 </thead>
                 <tbody>
                   {visibleLeads.map((lead) => (
-                    <tr key={lead.id} className="data-table__row" onClick={() => openEditModal(lead)}>
+                    <tr
+                      key={lead.id}
+                      className={`data-table__row${lead.lead_status === '폐기' ? ' data-table__row--disabled' : ''}`}
+                      onClick={() => openEditModal(lead)}
+                    >
                       {leadColumns.map((column) => {
                         const cellClassName = ['owner', 'contact', 'email'].includes(column.key)
                           ? 'lead-table__optional'
@@ -720,6 +795,13 @@ function LeadsPage() {
                           return (
                             <td key={column.key} className={cellClassName}>
                               {formatLeadId(lead)}
+                            </td>
+                          );
+                        }
+                        if (column.key === 'created_at') {
+                          return (
+                            <td key={column.key} className={cellClassName}>
+                              {formatDate(lead.created_at)}
                             </td>
                           );
                         }

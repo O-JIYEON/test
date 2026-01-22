@@ -48,7 +48,7 @@ ul {
   border-right: 1px solid rgba(148, 163, 184, 0.25);
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100%;
   overflow-y: auto;
 }
 
@@ -153,6 +153,12 @@ ul {
   gap: 16px;
 }
 
+.content__header-group {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
 .content__header-row h2 {
   margin-bottom: 0;
 }
@@ -211,7 +217,7 @@ ul {
 .content__section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  gap: 0;
 }
 
 .content__section--single {
@@ -225,12 +231,99 @@ ul {
 .content__section--split {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
   align-items: start;
+  column-gap: 20px;
 }
 
 .content__split-column {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.customer-expand-table .customer-expand__row {
+  cursor: pointer;
+}
+
+.customer-expand__cell {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.customer-expand__icon {
+  color: #7dd3fc;
+  font-size: 0.9rem;
+}
+
+.customer-expand__title {
+  font-weight: 400;
+  line-height: inherit;
+}
+
+.customer-expand__details td {
+  padding: 0;
+  background: rgba(15, 23, 42, 0.18);
+}
+
+.customer-expand__details > td {
+  padding: 0 !important;
+}
+
+.customer-expand__details .table__wrapper,
+.customer-expand__details .customer-expand__subtable {
+  margin-top: 0;
+}
+
+.customer-expand__details .data-table {
+  margin-top: 0;
+}
+
+.customer-expand__details .table__wrapper {
+  padding: 0;
+  margin: 0;
+  margin-top: 0;
+}
+
+
+.customer-expand__details .table__status {
+  margin: 0;
+  padding: 12px 0;
+}
+
+.customer-expand__subtable {
+  width: 100%;
+  background: transparent;
+  table-layout: fixed;
+  margin: 0;
+  border-collapse: collapse;
+}
+
+.customer-expand__subtable th,
+.customer-expand__subtable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.customer-expand__subtable thead th {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.customer-expand__subtable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+html[data-theme='light'] .customer-expand__panel {
+  background: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+html[data-theme='light'] .customer-expand__subtable thead th {
+  background: #f1f5f9;
+}
+
+html[data-theme='light'] .customer-expand__details td {
+  background: #f8fafc;
 }
 
 .content__section-title {
@@ -718,10 +811,10 @@ html[data-theme='light'] .lead-status-summary__value--won {
 }
 
 .project-form__field input[type='date']:not([data-filled='true']):not(:focus) + span {
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1rem;
-  color: #94a3b8;
+  top: -6px;
+  transform: translateY(0);
+  font-size: 0.72rem;
+  color: #9aa4b2;
 }
 
 .project-form input[type='date'],
@@ -864,6 +957,175 @@ html[data-theme='light'] .lead-status-summary__value--won {
   font-weight: 600;
   font-size: 0.95rem;
   white-space: pre-wrap;
+}
+
+.deal-modal__body {
+  display: grid;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.deal-modal__content {
+  width: min(1020px, 100%);
+}
+
+.deal-modal__content--wide {
+  width: min(1220px, 100%);
+}
+
+.deal-modal__body--triple {
+  grid-template-columns: 1fr 1.5fr 350px;
+}
+
+.deal-modal__body--double {
+  grid-template-columns: 1.5fr 1fr;
+}
+
+.deal-modal__body--single {
+  grid-template-columns: 1fr;
+}
+
+.deal-modal__lead {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.deal-modal__lead-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.deal-modal__lead-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.deal-modal__form {
+  margin-top: 0;
+}
+
+.deal-modal__logs {
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.deal-modal__logs-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.deal-modal__logs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.help-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: default;
+}
+
+.help-badge__tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  transform: none;
+  background: rgba(15, 23, 42, 0.95);
+  color: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+
+.help-badge:hover .help-badge__tooltip {
+  opacity: 1;
+}
+
+.deal-modal__logs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.deal-modal__log-item {
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.deal-modal__log-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.deal-modal__log-date {
+  color: #e2e8f0;
+}
+
+.deal-modal__log-owner {
+  color: #94a3b8;
+}
+
+.deal-modal__log-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.deal-modal__log-label {
+  color: #94a3b8;
+}
+
+.deal-modal__log-value {
+  color: #e2e8f0;
+  text-align: right;
+  flex: 1;
+}
+
+.lead-info--plain {
+  gap: 12px;
+}
+
+.lead-info--plain .lead-info__item {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.5);
 }
 
 .modal__content--white {
@@ -1010,6 +1272,10 @@ html[data-theme='dark'] .lead-info__value {
   font-size: 0.95rem;
 }
 
+.data-table tr {
+  height: 49px;
+}
+
 .data-table th,
 .data-table td {
   padding: 10px 12px;
@@ -1094,6 +1360,7 @@ html[data-theme='dark'] .lead-info__value {
 .deal-status-badge {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.8rem;
@@ -1521,6 +1788,8 @@ html[data-theme='light'] .lead-badge--default {
 .table__status {
   margin-top: 12px;
   color: #94a3b8;
+  text-align: center;
+  padding: 20px 12px;
 }
 
 .table__status--error {
@@ -1687,6 +1956,10 @@ html[data-theme='light'] .lead-badge--default {
   max-height: 80vh;
   display: flex;
   flex-direction: column;
+}
+
+.modal__content.deal-modal__content {
+  width: min(1020px, 100%);
 }
 
 .modal__content--compact {
@@ -2103,6 +2376,36 @@ html[data-theme='light'] .lead-info__value {
   color: #0f172a;
 }
 
+html[data-theme='light'] .lead-info--plain .lead-info__item {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+html[data-theme='light'] .deal-modal__logs {
+  background: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+html[data-theme='light'] .deal-modal__log-item {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+html[data-theme='light'] .deal-modal__log-date,
+html[data-theme='light'] .deal-modal__log-value {
+  color: #0f172a;
+}
+
+html[data-theme='light'] .help-badge {
+  background: rgba(37, 99, 235, 0.15);
+  color: #2563eb;
+}
+
+html[data-theme='light'] .help-badge__tooltip {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
 html[data-theme='light'] .lead-customer-select__list {
   background: #ffffff;
   border-color: #e2e8f0;
@@ -2456,6 +2759,9 @@ html[data-theme='light'] .project-form__field select:disabled + span {
 
 
 html[data-theme='light'] .project-form__field input[type='date']:not([data-filled='true']):not(:focus) + span {
+  top: -6px;
+  transform: translateY(0);
+  font-size: 0.72rem;
   color: #94a3b8;
 }
 
@@ -2516,6 +2822,10 @@ html[data-theme='light'] .modal__content {
 
 html[data-theme='light'] .modal__header {
   background: #ffffff;
+}
+
+html[data-theme='dark'] .deal-modal__content .modal__header {
+  background: transparent;
 }
 
 html[data-theme='light'] .modal__overlay {
