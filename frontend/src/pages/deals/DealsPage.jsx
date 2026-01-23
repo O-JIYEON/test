@@ -83,6 +83,7 @@ const dealColumns = [
   { key: 'probability', label: '확률' },
   { key: 'weighted_amount', label: '가중금액(원)' },
   { key: 'expected_close_date', label: '예상수주일' },
+  { key: 'won_date', label: '수주확정일' },
   { key: 'status', label: '상태' },
   { key: 'next_action_date', label: '다음액션일' },
   { key: 'next_action_content', label: '다음액션내용' },
@@ -232,6 +233,7 @@ function DealsPage() {
       { name: 'stage', label: '딜단계', type: 'select', options: stageOptions },
       { name: 'expected_amount', label: '예상금액(원)', type: 'number' },
       { name: 'expected_close_date', label: '예상수주일', type: 'date' },
+      { name: 'won_date', label: '수주확정일', type: 'date' },
       { name: 'next_action_date', label: '다음액션일', type: 'date' },
       { name: 'next_action_content', label: '다음액션내용', type: 'textarea' },
       { name: 'loss_reason', label: '실주사유', type: 'select', options: lossReasonOptions }
@@ -345,6 +347,7 @@ function DealsPage() {
       stage: stageOptions[0],
       expected_amount: '',
       expected_close_date: '',
+      won_date: '',
       next_action_date: '',
       next_action_content: '',
       loss_reason: ''
@@ -364,6 +367,7 @@ function DealsPage() {
       stage: deal.stage || '',
       expected_amount: formattedExpectedAmount || '',
       expected_close_date: formatDate(deal.expected_close_date),
+      won_date: formatDate(deal.won_date),
       next_action_date: formatDate(deal.next_action_date),
       next_action_content: deal.next_action_content || '',
       loss_reason: deal.loss_reason || ''
@@ -762,7 +766,11 @@ function DealsPage() {
                             </td>
                           );
                         }
-                        if (column.key === 'created_at' || column.key === 'expected_close_date') {
+                        if (
+                          column.key === 'created_at' ||
+                          column.key === 'expected_close_date' ||
+                          column.key === 'won_date'
+                        ) {
                           return (
                             <td key={column.key} className={cellClassName}>
                               {formatDate(deal[column.key])}
@@ -903,7 +911,7 @@ function DealsPage() {
                   }
                   if (editingId && stageValue === '실주') {
                     if (
-                      ['expected_amount', 'expected_close_date', 'next_action_date', 'next_action_content'].includes(
+                      ['expected_amount', 'expected_close_date', 'won_date', 'next_action_date', 'next_action_content'].includes(
                         field.name
                       )
                     ) {

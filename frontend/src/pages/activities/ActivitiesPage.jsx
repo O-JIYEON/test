@@ -148,7 +148,7 @@ function ActivitiesPage() {
                     setPage(1);
                   }}
                 />
-                <span>검색 (회사, Deal Id, Lead Id)</span>
+                <span>검색 (회사, Lead Id, Deal Id)</span>
               </label>
             </div>
           </form>

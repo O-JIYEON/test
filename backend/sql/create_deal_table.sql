@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS `deal` (
   `stage` VARCHAR(255),
   `expected_amount` BIGINT,
   `expected_close_date` DATE,
+  `won_date` DATE,
   `next_action_date` DATE,
   `next_action_content` TEXT,
   `loss_reason` TEXT,

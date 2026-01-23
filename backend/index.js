@@ -633,6 +633,7 @@ async function getDeals(req, res) {
         deal.stage,
         deal.expected_amount,
         deal.expected_close_date,
+        deal.won_date,
         deal.next_action_date,
         deal.next_action_content,
         deal.loss_reason,

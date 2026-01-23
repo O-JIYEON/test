@@ -14,6 +14,9 @@ function DashboardPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
+  const [periodMode, setPeriodMode] = useState('year');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
 
   const probabilityByStage = useMemo(() => {
     const map = lookupValues.reduce((acc, value) => {
@@ -65,6 +68,7 @@ function DashboardPage() {
       { name: 'stage', label: '딜단계', type: 'select', options: stageOptions },
       { name: 'expected_amount', label: '예상금액(원)', type: 'number' },
       { name: 'expected_close_date', label: '예상수주일', type: 'date' },
+      { name: 'won_date', label: '수주확정일', type: 'date' },
       { name: 'next_action_date', label: '다음액션일', type: 'date' },
       { name: 'next_action_content', label: '다음액션내용', type: 'textarea' },
       { name: 'loss_reason', label: '실주사유', type: 'select', options: lossReasonOptions }
@@ -139,6 +143,15 @@ function DashboardPage() {
     return `${year}-${month}`;
   };
 
+  const getYearLabel = (dateValue) => {
+    if (!dateValue) {
+      return null;
+    }
+    const text = String(dateValue).slice(0, 10);
+    const [year] = text.split('-');
+    return year || null;
+  };
+
   useEffect(() => {
     const loadDeals = async () => {
       try {
@@ -197,13 +210,62 @@ function DashboardPage() {
     loadActivityLogs();
   }, []);
 
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    deals.forEach((deal) => {
+      const baseDate = deal.expected_close_date || deal.created_at;
+      const year = getYearLabel(baseDate);
+      if (year) {
+        years.add(year);
+      }
+    });
+    return Array.from(years).sort();
+  }, [deals]);
+
+  const availableMonths = useMemo(() => {
+    const months = new Set();
+    deals.forEach((deal) => {
+      const baseDate = deal.expected_close_date || deal.created_at;
+      const month = getMonthLabel(baseDate);
+      if (month) {
+        months.add(month);
+      }
+    });
+    return Array.from(months).sort();
+  }, [deals]);
+
+  useEffect(() => {
+    if (!selectedYear && availableYears.length) {
+      setSelectedYear(availableYears[availableYears.length - 1]);
+    }
+  }, [availableYears, selectedYear]);
+
+  useEffect(() => {
+    if (!selectedMonth && availableMonths.length) {
+      setSelectedMonth(availableMonths[availableMonths.length - 1]);
+    }
+  }, [availableMonths, selectedMonth]);
+
+  const filteredDeals = useMemo(() => {
+    if (!deals.length) {
+      return [];
+    }
+    if (periodMode === 'year' && selectedYear) {
+      return deals.filter((deal) => getYearLabel(deal.expected_close_date || deal.created_at) === selectedYear);
+    }
+    if (periodMode === 'month' && selectedMonth) {
+      return deals.filter((deal) => getMonthLabel(deal.expected_close_date || deal.created_at) === selectedMonth);
+    }
+    return deals;
+  }, [deals, periodMode, selectedYear, selectedMonth]);
+
   const monthlyData = useMemo(() => {
     const buckets = {};
-    deals.forEach((deal) => {
+    filteredDeals.forEach((deal) => {
       if (getStatus(deal) !== '수주') {
         return;
       }
-      const month = getMonthLabel(deal.expected_close_date);
+      const month = getMonthLabel(deal.won_date);
       if (!month) {
         return;
       }
@@ -226,7 +288,7 @@ function DashboardPage() {
       actual: item.actual,
       goal: Math.round(item.actual * 0.9)
     }));
-  }, [deals]);
+  }, [filteredDeals]);
 
   const monthlySeries = [
     { name: '목표', data: monthlyData.map((item) => item.goal) },
@@ -277,17 +339,17 @@ function DashboardPage() {
   };
 
   const overviewStats = useMemo(() => {
-    const won = deals.reduce((sum, deal) => {
+    const won = filteredDeals.reduce((sum, deal) => {
       if (getStatus(deal) !== '수주') {
         return sum;
       }
       return sum + parseAmount(deal.expected_amount);
     }, 0);
     return [{ label: '총 수주액', value: formatAmount(won) }];
-  }, [deals]);
+  }, [filteredDeals]);
 
   const recentActiveDeals = useMemo(() => {
-    return deals
+    return filteredDeals
       .filter((deal) => {
         const statusValue = getStatus(deal);
         return statusValue !== '수주' && statusValue !== '실주' && statusValue !== '폐기';
@@ -298,7 +360,7 @@ function DashboardPage() {
         return bTime - aTime;
       })
       .slice(0, 5);
-  }, [deals]);
+  }, [filteredDeals]);
 
   const leadMap = useMemo(() => {
     return leads.reduce((acc, lead) => {
@@ -339,6 +401,7 @@ function DashboardPage() {
       stage: deal.stage || '',
       expected_amount: formatAmount(deal.expected_amount) || '',
       expected_close_date: formatDate(deal.expected_close_date),
+      won_date: formatDate(deal.won_date),
       next_action_date: formatDate(deal.next_action_date),
       next_action_content: deal.next_action_content || '',
       loss_reason: deal.loss_reason || ''
@@ -433,7 +496,7 @@ function DashboardPage() {
   const pipelineStages = stageOptions;
 
   const pipelineSeries = useMemo(() => {
-    const sums = deals.reduce((acc, deal) => {
+    const sums = filteredDeals.reduce((acc, deal) => {
       const amount = parseAmount(deal.expected_amount);
       const stage = deal.stage || '미지정';
       acc[stage] = (acc[stage] || 0) + amount;
@@ -445,7 +508,7 @@ function DashboardPage() {
         data: pipelineStages.map((stage) => sums[stage] || 0)
       }
     ];
-  }, [deals, pipelineStages]);
+  }, [filteredDeals, pipelineStages]);
 
   const pipelineOptions = {
     chart: {
@@ -488,34 +551,59 @@ function DashboardPage() {
     <>
       <section className="content__section content__section--single">
         <div className="dashboard">
-          <form className="filter-form">
-            <div className="filter-form__fields">
-              <label className="project-form__field" htmlFor="dashboard-filter-start">
-                <input
-                  id="dashboard-filter-start"
-                  name="startDate"
-                  type="date"
-                  data-filled="false"
-                  onChange={(event) => {
-                    event.target.dataset.filled = event.target.value ? 'true' : 'false';
-                  }}
-                />
-                <span>기간 From</span>
-              </label>
-              <label className="project-form__field" htmlFor="dashboard-filter-end">
-                <input
-                  id="dashboard-filter-end"
-                  name="endDate"
-                  type="date"
-                  data-filled="false"
-                  onChange={(event) => {
-                    event.target.dataset.filled = event.target.value ? 'true' : 'false';
-                  }}
-                />
-                <span>기간 To</span>
-              </label>
+          <div className="dashboard__period">
+            <div className="dashboard__period-toggle">
+              <button
+                type="button"
+                className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
+                onClick={() => setPeriodMode('year')}
+              >
+                연도별
+              </button>
+              <button
+                type="button"
+                className={`dashboard__period-btn${periodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
+                onClick={() => setPeriodMode('month')}
+              >
+                월별
+              </button>
             </div>
-          </form>
+            <div className="dashboard__period-select">
+              {periodMode === 'year' ? (
+                <label className="project-form__field" htmlFor="dashboard-year-select">
+                  <select
+                    id="dashboard-year-select"
+                    value={selectedYear}
+                    onChange={(event) => setSelectedYear(event.target.value)}
+                    data-filled={selectedYear ? 'true' : 'false'}
+                  >
+                    {availableYears.map((year) => (
+                      <option key={year} value={year}>
+                        {year}년
+                      </option>
+                    ))}
+                  </select>
+                  <span>연도</span>
+                </label>
+              ) : (
+                <label className="project-form__field" htmlFor="dashboard-month-select">
+                  <select
+                    id="dashboard-month-select"
+                    value={selectedMonth}
+                    onChange={(event) => setSelectedMonth(event.target.value)}
+                    data-filled={selectedMonth ? 'true' : 'false'}
+                  >
+                    {availableMonths.map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                  <span>월</span>
+                </label>
+              )}
+            </div>
+          </div>
 
           <div className="dashboard__overview">
             <div className="dashboard__overview-cards">
@@ -631,7 +719,11 @@ function DashboardPage() {
                     return null;
                   }
                   if (stageValue === '실주') {
-                    if (['expected_amount', 'expected_close_date', 'next_action_date', 'next_action_content'].includes(field.name)) {
+                    if (
+                      ['expected_amount', 'expected_close_date', 'won_date', 'next_action_date', 'next_action_content'].includes(
+                        field.name
+                      )
+                    ) {
                       return null;
                     }
                   }
