@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
 const API_BASE = `http://${window.location.hostname}:5001`;
@@ -158,6 +159,9 @@ const getDdayText = (value) => {
 };
 
 function DealsPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const lastOpenedRef = useRef(null);
   const [deals, setDeals] = useState([]);
   const [leads, setLeads] = useState([]);
   const [lookupValues, setLookupValues] = useState([]);
@@ -213,7 +217,7 @@ function DealsPage() {
       if (value?.label) {
         const rawProbability = value.probability;
         if (rawProbability !== null && rawProbability !== undefined && rawProbability !== '') {
-          acc[value.label] = Number(rawProbability) * 100;
+          acc[value.label] = Number(rawProbability);
         }
       }
       return acc;
@@ -317,6 +321,22 @@ function DealsPage() {
     loadLookupValues();
   }, []);
 
+  useEffect(() => {
+    const openDealId = location.state?.openDealId;
+    if (!openDealId || status !== 'ready') {
+      return;
+    }
+    if (lastOpenedRef.current === openDealId) {
+      return;
+    }
+    const target = deals.find((deal) => String(deal.id) === String(openDealId));
+    if (target) {
+      lastOpenedRef.current = openDealId;
+      openEditModal(target);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, status, deals, navigate, location.pathname]);
+
   const openCreateModal = () => {
     setEditingId(null);
     setFormData({
@@ -336,12 +356,13 @@ function DealsPage() {
 
   const openEditModal = (deal) => {
     setEditingId(deal.id);
+    const formattedExpectedAmount = formatAmount(deal.expected_amount);
     setFormData({
       lead_id: deal.lead_id ?? '',
       lead_code: deal.lead_code ?? '',
       project_name: deal.project_name || '',
       stage: deal.stage || '',
-      expected_amount: deal.expected_amount || '',
+      expected_amount: formattedExpectedAmount || '',
       expected_close_date: formatDate(deal.expected_close_date),
       next_action_date: formatDate(deal.next_action_date),
       next_action_content: deal.next_action_content || '',
@@ -474,7 +495,7 @@ function DealsPage() {
         inactive_days: getInactiveDays(deal.next_action_date)
       };
     });
-  }, [deals]);
+  }, [deals, probabilityByStage, stageOptions]);
 
   const dealLeadInfo = useMemo(() => {
     if (!editingId || !formData.lead_id) {
@@ -935,11 +956,24 @@ function DealsPage() {
                                         {lead.lead_code || lead.id} - {lead.company}
                                       </option>
                                     ))
-                                  : field.options?.map((option) => (
-                                      <option key={option} value={option}>
-                                        {option}
-                                      </option>
-                                    ))}
+                                  : (() => {
+                                      if (field.name !== 'stage') {
+                                        return field.options?.map((option) => (
+                                          <option key={option} value={option}>
+                                            {option}
+                                          </option>
+                                        ));
+                                      }
+                                      const currentValue = formData[field.name] ?? '';
+                                      const mergedOptions = Array.from(
+                                        new Set([currentValue, ...(field.options || [])])
+                                      ).filter(Boolean);
+                                      return mergedOptions.map((option) => (
+                                        <option key={option} value={option}>
+                                          {option}
+                                        </option>
+                                      ));
+                                    })()}
                               </select>
                               {formData[field.name] && (
                                 <button

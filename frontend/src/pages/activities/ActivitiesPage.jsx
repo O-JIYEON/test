@@ -43,6 +43,19 @@ function ActivitiesPage() {
     }, 1500);
   };
 
+  const copyToClipboard = async (value) => {
+    if (!value) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(String(value));
+      showToast('복사되었습니다.');
+    } catch (error) {
+      console.error(error);
+      showToast('복사에 실패했습니다.');
+    }
+  };
+
   const loadLogs = async () => {
     try {
       setStatus('loading');
@@ -99,7 +112,8 @@ function ActivitiesPage() {
     }
     const company = String(log.company ?? '').toLowerCase();
     const dealCode = String(log.deal_code ?? '').toLowerCase();
-    return company.includes(query) || dealCode.includes(query);
+    const leadCode = String(log.lead_code ?? '').toLowerCase();
+    return company.includes(query) || dealCode.includes(query) || leadCode.includes(query);
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
@@ -134,7 +148,7 @@ function ActivitiesPage() {
                     setPage(1);
                   }}
                 />
-                <span>검색 (회사, Deal Id)</span>
+                <span>검색 (회사, Deal Id, Lead Id)</span>
               </label>
             </div>
           </form>
@@ -164,6 +178,20 @@ function ActivitiesPage() {
                           const raw = log[column.key];
                           const formatted = raw ? dayjs.utc(raw).tz('Asia/Seoul').format('YYYY-MM-DD') : '';
                           return <td key={column.key}>{formatted || '-'}</td>;
+                        }
+                        if (column.key === 'lead_code' || column.key === 'deal_code') {
+                          const value = log[column.key];
+                          return (
+                            <td key={column.key}>
+                              <button
+                                className="table-copy"
+                                type="button"
+                                onClick={() => copyToClipboard(value)}
+                              >
+                                {value || '-'}
+                              </button>
+                            </td>
+                          );
                         }
                         return <td key={column.key}>{log[column.key] ?? ''}</td>;
                       })}

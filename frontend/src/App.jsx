@@ -56,7 +56,7 @@ function App() {
             if (item.path === '/activities') {
               return <Route key={item.path} path={item.path} element={<ActivitiesPage />} />;
             }
-            if (item.path === '/period-3') {
+            if (item.path === '/leads') {
               return <Route key={item.path} path={item.path} element={<LeadsPage />} />;
             }
             if (item.path === '/settings') {

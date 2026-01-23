@@ -8,10 +8,9 @@ const categoryColumns = [
   { key: 'label', label: '이름' }
 ];
 
-const valueColumns = [
+const baseValueColumns = [
   { key: 'id', label: 'id' },
   { key: 'label', label: '값' },
-  { key: 'probability', label: '확률' },
   { key: 'sort_order', label: '정렬' },
   { key: 'delete', label: '삭제' }
 ];
@@ -78,6 +77,18 @@ function SettingsPage() {
 
   const selectedCategory = categories.find((cat) => cat.id === selectedCategoryId) || null;
   const isPipelineCategory = selectedCategory?.label === '파이프라인 단계' || selectedCategory?.label === '딜단계';
+  const valueColumns = useMemo(() => {
+    if (isPipelineCategory) {
+      return [
+        { key: 'id', label: 'id' },
+        { key: 'label', label: '값' },
+        { key: 'probability', label: '확률' },
+        { key: 'sort_order', label: '정렬' },
+        { key: 'delete', label: '삭제' }
+      ];
+    }
+    return baseValueColumns;
+  }, [isPipelineCategory]);
 
   const filteredValues = useMemo(() => {
     if (!selectedCategoryId) {

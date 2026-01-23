@@ -8,6 +8,7 @@ const defaultSourceOptions = ['문의(웹/매일)', '소개', '전시/세미나'
 const defaultProductLineOptions = ['SI(프로젝트)', '유지보수', 'PoC/데모', '구독/라이센스', 'HW+SW'];
 const defaultRegionOptions = ['수도권', '영남', '호남', '충청', '강원', '제주', '해외'];
 const defaultSegmentOptions = ['Enterprise', 'SMB', '공공', '제조', '에너지', '조선/해양', '건설'];
+const defaultOwnerOptions = ['미지정'];
 
 const customerFields = [
   { name: 'business_registration_number', label: '사업자 등록증번호', type: 'text' }
@@ -19,7 +20,7 @@ const contactDetailFields = [
 ];
 
 const leadFieldConfig = [
-  { name: 'customer_owner', label: '담당자(영업)', type: 'text' },
+  { name: 'customer_owner', label: '담당자(영업)', type: 'select', category: '담당자' },
   { name: 'source', label: '유입소스', type: 'select', category: '유입소스' },
   { name: 'product_line', label: '제품라인', type: 'select', category: '제품라인' },
   { name: 'region', label: '지역', type: 'select', category: '지역' },
@@ -156,6 +157,9 @@ function LeadsPage() {
     return map;
   }, [lookupValues]);
 
+  const ownerOptions = lookupOptions['담당자']?.length
+    ? lookupOptions['담당자']
+    : defaultOwnerOptions;
   const sourceOptions = lookupOptions['유입소스']?.length ? lookupOptions['유입소스'] : defaultSourceOptions;
   const productLineOptions = lookupOptions['제품라인']?.length
     ? lookupOptions['제품라인']
@@ -170,6 +174,9 @@ function LeadsPage() {
     return leadFieldConfig.map((field) => {
       if (field.type !== 'select') {
         return field;
+      }
+      if (field.category === '담당자') {
+        return { ...field, options: ownerOptions };
       }
       if (field.category === '유입소스') {
         return { ...field, options: sourceOptions };
@@ -188,7 +195,7 @@ function LeadsPage() {
       }
       return field;
     });
-  }, [sourceOptions, productLineOptions, regionOptions, segmentOptions, leadStatusOptions]);
+  }, [ownerOptions, sourceOptions, productLineOptions, regionOptions, segmentOptions, leadStatusOptions]);
 
   const loadLeads = async () => {
     try {
