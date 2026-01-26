@@ -156,8 +156,7 @@ function ActivitiesPage() {
         <div className="content__card content__card--wide">
           {status === 'loading' && <p className="table__status">불러오는 중...</p>}
           {status === 'error' && null}
-          {status === 'ready' && filteredLogs.length === 0 && <p className="table__status">데이터가 없습니다.</p>}
-          {status === 'ready' && filteredLogs.length > 0 && (
+          {status === 'ready' && (
             <div className="table__wrapper">
               <table className="data-table">
                 <thead>
@@ -168,7 +167,14 @@ function ActivitiesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleLogs.map((log) => (
+                  {filteredLogs.length === 0 && (
+                    <tr className="data-table__row data-table__row--empty">
+                      <td colSpan={columns.length} className="data-table__empty">
+                        데이터가 없습니다.
+                      </td>
+                    </tr>
+                  )}
+                  {filteredLogs.length > 0 && visibleLogs.map((log) => (
                     <tr key={log.id} className="data-table__row">
                       {columns.map((column) => {
                         if (column.key === 'activity_date') {

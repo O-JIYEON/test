@@ -124,6 +124,7 @@ function LeadsPage() {
   const [contactHighlightIndex, setContactHighlightIndex] = useState(-1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('전체');
@@ -367,7 +368,8 @@ function LeadsPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const showToast = (message) => {
+  const showToast = (message, type = 'success') => {
+    setToastType(type);
     setToastMessage(message);
     window.clearTimeout(showToast.timer);
     showToast.timer = window.setTimeout(() => {
@@ -500,15 +502,15 @@ function LeadsPage() {
       setFormStatus('');
       setFormErrorMessage('');
       if (editingId) {
-        showToast(data.dealCreated ? '딜이 생성되었습니다.' : '리드가 수정되었습니다.');
+        showToast(data.dealCreated ? '딜이 생성되었습니다.' : '리드가 수정되었습니다.', 'success');
       } else {
-        showToast(data.dealCreated ? '딜이 추가되었습니다.' : '리드가 등록되었습니다.');
+        showToast(data.dealCreated ? '딜이 추가되었습니다.' : '리드가 등록되었습니다.', 'success');
       }
     } catch (error) {
       console.error(error);
       setFormStatus('error');
       setFormErrorMessage('저장에 실패했습니다.');
-      showToast('저장에 실패했습니다.');
+      showToast('저장에 실패했습니다.', 'error');
     }
   };
 
@@ -539,9 +541,10 @@ function LeadsPage() {
       setFormData({});
       setFormStatus('');
       setFormErrorMessage('');
-      showToast('리드가 삭제되었습니다.');
+      showToast('리드가 삭제되었습니다.', 'success');
     } catch (error) {
       console.error(error);
+      showToast('삭제에 실패했습니다.', 'error');
     }
   };
 
@@ -751,11 +754,7 @@ function LeadsPage() {
         <div className="content__card content__card--wide">
           {status === 'loading' && <p className="table__status">불러오는 중...</p>}
           {status === 'error' && null}
-          {status === 'ready' && leads.length === 0 && <p className="table__status">데이터가 없습니다.</p>}
-          {status === 'ready' && leads.length > 0 && sortedLeads.length === 0 && (
-            <p className="table__status">조건에 맞는 데이터가 없습니다.</p>
-          )}
-          {status === 'ready' && sortedLeads.length > 0 && (
+          {status === 'ready' && (
             <div className="table__wrapper">
               <table className="data-table">
                 <thead>
@@ -788,7 +787,15 @@ function LeadsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleLeads.map((lead) => (
+                  {sortedLeads.length === 0 && (
+                    <tr className="data-table__row data-table__row--empty">
+                      <td colSpan={leadColumns.length} className="data-table__empty">
+                        {leads.length === 0 ? '데이터가 없습니다.' : '조건에 맞는 데이터가 없습니다.'}
+                      </td>
+                    </tr>
+                  )}
+                  {sortedLeads.length > 0 &&
+                    visibleLeads.map((lead) => (
                     <tr
                       key={lead.id}
                       className={`data-table__row${lead.lead_status === '폐기' ? ' data-table__row--disabled' : ''}`}
@@ -853,7 +860,7 @@ function LeadsPage() {
                                     onClick={(event) => {
                                       event.stopPropagation();
                                       navigator.clipboard?.writeText(email);
-                                      showToast('이메일이 복사되었습니다.');
+                                      showToast('이메일이 복사되었습니다.', 'success');
                                     }}
                                   >
                                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -887,7 +894,7 @@ function LeadsPage() {
                         );
                       })}
                     </tr>
-                  ))}
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -1229,7 +1236,7 @@ function LeadsPage() {
         onConfirm={confirmState.onConfirm || handleConfirmCancel}
         onCancel={handleConfirmCancel}
       />
-      {toastMessage && <div className="toast">{toastMessage}</div>}
+      {toastMessage && <div className={`toast toast--${toastType}`}>{toastMessage}</div>}
     </>
   );
 }

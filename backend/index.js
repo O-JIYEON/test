@@ -52,7 +52,11 @@ function normalizeNumberValue(value) {
   if (value === null || value === undefined || value === '') {
     return null;
   }
-  return value;
+  const numeric = String(value).replace(/[^\d.-]/g, '');
+  if (numeric === '' || Number.isNaN(Number(numeric))) {
+    return null;
+  }
+  return Number(numeric);
 }
 
 function normalizeIdValue(value) {
@@ -648,12 +652,13 @@ async function getDeals(req, res) {
         lead.region,
         lead.segment,
         customers.company,
-        primary_contact.name AS owner,
-        primary_contact.contact,
-        primary_contact.email
+        selected_contact.name AS owner,
+        selected_contact.contact AS contact,
+        selected_contact.email AS email
       FROM \`deal\`
       LEFT JOIN \`lead\` ON lead.id = deal.lead_id
       LEFT JOIN \`customers\` ON customers.id = lead.customer_id
+      LEFT JOIN \`customer_contacts\` AS selected_contact ON selected_contact.id = lead.contact_id
       LEFT JOIN (
         SELECT cc.customer_id, cc.name, cc.contact, cc.email
         FROM \`customer_contacts\` cc
@@ -1291,6 +1296,7 @@ async function getLookupValues(req, res) {
         v.category_id,
         c.label AS category_label,
         v.label,
+        v.department,
         v.probability,
         v.sort_order,
         v.created_at,

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `lookup_values` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `category_id` INT NOT NULL,
   `label` VARCHAR(100) NOT NULL,
+  `department` VARCHAR(100) DEFAULT NULL,
   `probability` DECIMAL(5,2) DEFAULT NULL,
   `sort_order` INT NOT NULL DEFAULT 0,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

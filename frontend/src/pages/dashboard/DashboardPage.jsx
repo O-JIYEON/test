@@ -11,10 +11,24 @@ function DashboardPage() {
   const [editingDeal, setEditingDeal] = useState(null);
   const [formData, setFormData] = useState({});
   const [formStatus, setFormStatus] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [periodMode, setPeriodMode] = useState('year');
+  const [groupMode, setGroupMode] = useState('department');
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [summaryDepartment, setSummaryDepartment] = useState('');
+  const [summaryOwner, setSummaryOwner] = useState('');
+
+  const showToast = (message, type = 'success') => {
+    setToastType(type);
+    setToastMessage(message);
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => {
+      setToastMessage('');
+    }, 1500);
+  };
 
   const probabilityByStage = useMemo(() => {
     const map = lookupValues.reduce((acc, value) => {
@@ -258,13 +272,10 @@ function DashboardPage() {
         buckets[label].actual += parseAmount(deal.expected_amount);
       });
       const entries = Object.values(buckets).sort((a, b) => (a.label > b.label ? 1 : -1));
-      const fallback = [
-        { label: '2024', actual: 520000000 },
-        { label: '2025', actual: 640000000 },
-        { label: '2026', actual: 410000000 }
-      ];
-      const source = entries.length ? entries : fallback;
-      return source.map((item) => ({
+      if (!entries.length) {
+        return [];
+      }
+      return entries.map((item) => ({
         year: item.label,
         actual: item.actual,
         goal: Math.round(item.actual * 0.9)
@@ -281,15 +292,10 @@ function DashboardPage() {
       buckets[label].actual += parseAmount(deal.expected_amount);
     });
     const entries = Object.values(buckets).sort((a, b) => (a.label > b.label ? 1 : -1));
-    const fallback = [
-      { label: '2026-01', actual: 120000000 },
-      { label: '2026-02', actual: 90000000 },
-      { label: '2026-03', actual: 140000000 },
-      { label: '2026-04', actual: 110000000 },
-      { label: '2026-05', actual: 160000000 }
-    ];
-    const source = entries.length ? entries : fallback;
-    return source.map((item) => ({
+    if (!entries.length) {
+      return [];
+    }
+    return entries.map((item) => ({
       month: item.label,
       actual: item.actual,
       goal: Math.round(item.actual * 0.9)
@@ -310,22 +316,19 @@ function DashboardPage() {
 
   const monthlyOptions = {
     chart: {
-      type: 'bar',
+      type: 'line',
       stacked: false,
       toolbar: { show: false }
     },
-    plotOptions: {
-      bar: {
-        columnWidth: '30px',
-        borderRadius: 6,
-        barGap: '2px'
-      }
-    },
     stroke: {
-      width: 2,
-      colors: [chartGapColor]
+      width: 3,
+      curve: 'smooth'
     },
-    colors: ['#155e75', '#1f6f8a'],
+    markers: {
+      size: 4,
+      strokeWidth: 0
+    },
+    colors: ['#38bdf8', '#f97316'],
     dataLabels: { enabled: false },
     xaxis: {
       categories: monthlyLabels,
@@ -343,7 +346,12 @@ function DashboardPage() {
         formatter: (value) => `${Number(value).toLocaleString('ko-KR')}원`
       }
     },
-    legend: { show: false }
+    legend: {
+      show: true,
+      position: 'top',
+      horizontalAlign: 'right',
+      labels: { colors: '#94a3b8' }
+    }
   };
 
   const overviewStats = useMemo(() => {
@@ -466,6 +474,450 @@ function DashboardPage() {
       .slice(0, 5);
   }, [filteredDeals]);
 
+  const activeLeadsCount = useMemo(() => {
+    return leads.filter((lead) => !lead.deleted_at && !lead.deletedAt).length;
+  }, [leads]);
+
+  const activeDealsCount = useMemo(() => {
+    return deals.filter((deal) => !deal.deleted_at && !deal.deletedAt).length;
+  }, [deals]);
+
+  const wonDealsCount = useMemo(() => {
+    return deals.filter(
+      (deal) => !deal.deleted_at && !deal.deletedAt && getStatus(deal) === '수주'
+    ).length;
+  }, [deals]);
+
+  const formatRate = (numerator, denominator) => {
+    if (!denominator) {
+      return '-';
+    }
+    return `${((numerator / denominator) * 100).toFixed(1)}%`;
+  };
+
+  const ownerSummary = useMemo(() => {
+    const acc = {};
+    const ensure = (owner) => {
+      const key = owner || '미지정';
+      if (!acc[key]) {
+        acc[key] = {
+          owner: key,
+          leadCount: 0,
+          dealCount: 0,
+          wonCount: 0,
+          wonAmount: 0,
+          weightedAmount: 0
+        };
+      }
+      return acc[key];
+    };
+
+    leads.forEach((lead) => {
+      if (lead.deleted_at || lead.deletedAt) {
+        return;
+      }
+      ensure(lead.customer_owner).leadCount += 1;
+    });
+
+    deals.forEach((deal) => {
+      if (deal.deleted_at || deal.deletedAt) {
+        return;
+      }
+      const entry = ensure(deal.customer_owner);
+      entry.dealCount += 1;
+      const amount = parseAmount(deal.expected_amount);
+      const probability = Number(probabilityByStage[deal.stage] ?? 0);
+      entry.weightedAmount += amount * (Number.isNaN(probability) ? 0 : probability / 100);
+      if (getStatus(deal) === '수주') {
+        entry.wonCount += 1;
+        entry.wonAmount += amount;
+      }
+    });
+
+    return Object.values(acc).sort((a, b) => b.wonAmount - a.wonAmount);
+  }, [leads, deals, probabilityByStage]);
+
+  const statusTrend = useMemo(() => {
+    const leadMap = {};
+    const dealMap = {};
+    const wonMap = {};
+
+    const addCount = (map, key) => {
+      if (!key) {
+        return;
+      }
+      map[key] = (map[key] || 0) + 1;
+    };
+
+    leads.forEach((lead) => {
+      if (lead.deleted_at || lead.deletedAt) {
+        return;
+      }
+      const key = periodMode === 'year' ? getYearLabel(lead.created_at) : getMonthLabel(lead.created_at);
+      addCount(leadMap, key);
+    });
+
+    deals.forEach((deal) => {
+      if (deal.deleted_at || deal.deletedAt) {
+        return;
+      }
+      const key = periodMode === 'year' ? getYearLabel(deal.created_at) : getMonthLabel(deal.created_at);
+      addCount(dealMap, key);
+      if (getStatus(deal) === '수주') {
+        const wonKey =
+          periodMode === 'year' ? getYearLabel(deal.won_date) : getMonthLabel(deal.won_date);
+        addCount(wonMap, wonKey);
+      }
+    });
+
+    const keys = Array.from(
+      new Set([...Object.keys(leadMap), ...Object.keys(dealMap), ...Object.keys(wonMap)])
+    ).sort();
+
+    return {
+      categories: keys,
+      series: [
+        { name: '유입리드수', data: keys.map((key) => leadMap[key] || 0) },
+        { name: '딜수', data: keys.map((key) => dealMap[key] || 0) },
+        { name: '수주 수', data: keys.map((key) => wonMap[key] || 0) }
+      ]
+    };
+  }, [leads, deals, periodMode]);
+
+  const ownerDepartmentMap = useMemo(() => {
+    return lookupValues.reduce((acc, value) => {
+      if (value.category_label !== '담당자') {
+        return acc;
+      }
+      if (value.label) {
+        acc[value.label] = value.department || '';
+      }
+      return acc;
+    }, {});
+  }, [lookupValues]);
+
+  const departmentOptions = useMemo(() => {
+    const set = new Set();
+    Object.values(ownerDepartmentMap).forEach((dept) => {
+      if (dept) {
+        set.add(dept);
+      }
+    });
+    return Array.from(set).sort();
+  }, [ownerDepartmentMap]);
+
+  const ownerOptions = useMemo(() => {
+    return lookupValues
+      .filter((value) => value.category_label === '담당자')
+      .sort((a, b) => {
+        const aOrder = Number(a.sort_order) || 0;
+        const bOrder = Number(b.sort_order) || 0;
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+        return String(a.label || '').localeCompare(String(b.label || ''), 'ko');
+      })
+      .map((value) => value.label)
+      .filter(Boolean);
+  }, [lookupValues]);
+
+  const groupedSummary = useMemo(() => {
+    const now = new Date();
+    const currentYear = String(now.getFullYear());
+    const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const useYear = periodMode === 'year';
+    const keyForOwner = (owner) => owner || '미지정';
+    const keyForDepartment = (owner) => {
+      const dept = owner ? ownerDepartmentMap[owner] : '';
+      return dept || '미지정';
+    };
+    const getGroupKey = (owner) => (groupMode === 'owner' ? keyForOwner(owner) : keyForDepartment(owner));
+
+    const counts = {};
+    const ensure = (key) => {
+      if (!counts[key]) {
+        counts[key] = { leadCount: 0, dealCount: 0, wonCount: 0 };
+      }
+      return counts[key];
+    };
+
+    leads.forEach((lead) => {
+      if (lead.deleted_at || lead.deletedAt) {
+        return;
+      }
+      const createdKey = useYear ? getYearLabel(lead.created_at) : getMonthLabel(lead.created_at);
+      if (!createdKey) {
+        return;
+      }
+      if (useYear && createdKey !== currentYear) {
+        return;
+      }
+      if (!useYear && createdKey !== currentMonth) {
+        return;
+      }
+      const key = getGroupKey(lead.customer_owner);
+      ensure(key).leadCount += 1;
+    });
+
+    deals.forEach((deal) => {
+      if (deal.deleted_at || deal.deletedAt) {
+        return;
+      }
+      const createdKey = useYear ? getYearLabel(deal.created_at) : getMonthLabel(deal.created_at);
+      if (!createdKey) {
+        return;
+      }
+      if (useYear && createdKey !== currentYear) {
+        return;
+      }
+      if (!useYear && createdKey !== currentMonth) {
+        return;
+      }
+      const key = getGroupKey(deal.customer_owner);
+      ensure(key).dealCount += 1;
+      if (getStatus(deal) === '수주') {
+        const wonKey = useYear ? getYearLabel(deal.won_date) : getMonthLabel(deal.won_date);
+        if (wonKey && ((useYear && wonKey === currentYear) || (!useYear && wonKey === currentMonth))) {
+          ensure(key).wonCount += 1;
+        }
+      }
+    });
+
+    const categories = Object.keys(counts);
+    return {
+      categories,
+      series: [
+        { name: '유입리드수', data: categories.map((key) => counts[key].leadCount) },
+        { name: '딜수', data: categories.map((key) => counts[key].dealCount) },
+        { name: '수주 수', data: categories.map((key) => counts[key].wonCount) }
+      ]
+    };
+  }, [leads, deals, periodMode, groupMode, ownerDepartmentMap]);
+
+  const buildOverviewStats = (dealList) => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const prevYear = String(currentYear - 1);
+    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonth = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+    const won = dealList.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const yearWon = dealList.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      if (getYearLabel(deal.won_date) !== String(currentYear)) {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const monthWon = dealList.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      if (getMonthLabel(deal.won_date) !== currentMonth) {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const prevYearWon = dealList.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      if (getYearLabel(deal.won_date) !== prevYear) {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const prevMonthWon = dealList.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      if (getMonthLabel(deal.won_date) !== prevMonth) {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const yearDelta = prevYearWon > 0 ? ((yearWon - prevYearWon) / prevYearWon) * 100 : null;
+    const monthDelta = prevMonthWon > 0 ? ((monthWon - prevMonthWon) / prevMonthWon) * 100 : null;
+    const formatDelta = (value) => {
+      if (value === null) {
+        return '-';
+      }
+      const sign = value > 0 ? '+' : '';
+      return `${sign}${value.toFixed(1)}%`;
+    };
+    const formatTooltip = (value, label) => {
+      if (value === null) {
+        return `${label} 데이터가 없습니다.`;
+      }
+      const direction = value >= 0 ? '증가' : '감소';
+      return `${label} 대비 ${Math.abs(value).toFixed(1)}% ${direction}했습니다.`;
+    };
+
+    return [
+      { label: '총 수주액', value: formatAmount(won) },
+      {
+        label: '금년 수주액',
+        value: formatAmount(yearWon),
+        delta: formatDelta(yearDelta),
+        deltaClass:
+          yearDelta === null
+            ? ''
+            : yearDelta >= 0
+              ? 'dashboard__overview-delta--up'
+              : 'dashboard__overview-delta--down',
+        deltaTooltip: formatTooltip(yearDelta, '전년')
+      },
+      {
+        label: '당월 수주액',
+        value: formatAmount(monthWon),
+        delta: formatDelta(monthDelta),
+        deltaClass:
+          monthDelta === null
+            ? ''
+            : monthDelta >= 0
+              ? 'dashboard__overview-delta--up'
+              : 'dashboard__overview-delta--down',
+        deltaTooltip: formatTooltip(monthDelta, '전월')
+      }
+    ];
+  };
+
+  const buildMonthlyData = (dealList) => {
+    const buckets = {};
+    dealList.forEach((deal) => {
+      if (getStatus(deal) !== '수주') {
+        return;
+      }
+      const label = getMonthLabel(deal.won_date);
+      if (!label) {
+        return;
+      }
+      if (!buckets[label]) {
+        buckets[label] = { label, actual: 0 };
+      }
+      buckets[label].actual += parseAmount(deal.expected_amount);
+    });
+    const entries = Object.values(buckets).sort((a, b) => (a.label > b.label ? 1 : -1));
+    if (!entries.length) {
+      return [];
+    }
+    return entries.map((item) => ({
+      month: item.label,
+      actual: item.actual,
+      goal: Math.round(item.actual * 0.9)
+    }));
+  };
+
+  const openSummaryModal = (key) => {
+    if (groupMode === 'department') {
+      setSummaryDepartment(key);
+      setSummaryOwner('');
+    } else {
+      setSummaryOwner(key);
+      setSummaryDepartment(ownerDepartmentMap[key] || '');
+    }
+    setIsSummaryModalOpen(true);
+  };
+
+  const summaryLeads = useMemo(() => {
+    return leads.filter((lead) => {
+      if (lead.deleted_at || lead.deletedAt) {
+        return false;
+      }
+      if (summaryOwner) {
+        return lead.customer_owner === summaryOwner;
+      }
+      if (summaryDepartment) {
+        return (ownerDepartmentMap[lead.customer_owner] || '') === summaryDepartment;
+      }
+      return true;
+    });
+  }, [leads, summaryOwner, summaryDepartment, ownerDepartmentMap]);
+
+  const summaryDeals = useMemo(() => {
+    return deals.filter((deal) => {
+      if (deal.deleted_at || deal.deletedAt) {
+        return false;
+      }
+      if (summaryOwner) {
+        return deal.customer_owner === summaryOwner;
+      }
+      if (summaryDepartment) {
+        return (ownerDepartmentMap[deal.customer_owner] || '') === summaryDepartment;
+      }
+      return true;
+    });
+  }, [deals, summaryOwner, summaryDepartment, ownerDepartmentMap]);
+
+  const pipelineStages = stageOptions;
+
+  const summaryOverviewStats = useMemo(() => buildOverviewStats(summaryDeals), [summaryDeals]);
+  const summaryMonthlyData = useMemo(() => buildMonthlyData(summaryDeals), [summaryDeals]);
+  const summaryMonthlySeries = [
+    { name: '목표', data: summaryMonthlyData.map((item) => item.goal) },
+    { name: '실적달성액', data: summaryMonthlyData.map((item) => item.actual) }
+  ];
+  const summaryMonthlyOptions = {
+    ...monthlyOptions,
+    dataLabels: { enabled: false },
+    xaxis: {
+      ...monthlyOptions.xaxis,
+      categories: summaryMonthlyData.map((item) => item.month)
+    }
+  };
+  const summaryPipelineSeries = useMemo(() => {
+    const sums = summaryDeals.reduce((acc, deal) => {
+      const amount = parseAmount(deal.expected_amount);
+      const stage = deal.stage || '미지정';
+      acc[stage] = (acc[stage] || 0) + amount;
+      return acc;
+    }, {});
+    return [{ name: '금액 합계', data: pipelineStages.map((stage) => sums[stage] || 0) }];
+  }, [summaryDeals, pipelineStages]);
+  const summaryStatusTrend = useMemo(() => {
+    const leadMap = {};
+    const dealMap = {};
+    const wonMap = {};
+    const addCount = (map, key) => {
+      if (!key) return;
+      map[key] = (map[key] || 0) + 1;
+    };
+    summaryLeads.forEach((lead) => {
+      const key = periodMode === 'year' ? getYearLabel(lead.created_at) : getMonthLabel(lead.created_at);
+      addCount(leadMap, key);
+    });
+    summaryDeals.forEach((deal) => {
+      const key = periodMode === 'year' ? getYearLabel(deal.created_at) : getMonthLabel(deal.created_at);
+      addCount(dealMap, key);
+      if (getStatus(deal) === '수주') {
+        const wonKey = periodMode === 'year' ? getYearLabel(deal.won_date) : getMonthLabel(deal.won_date);
+        addCount(wonMap, wonKey);
+      }
+    });
+    const keys = Array.from(new Set([...Object.keys(leadMap), ...Object.keys(dealMap), ...Object.keys(wonMap)])).sort();
+    return {
+      categories: keys,
+      series: [
+        { name: '유입리드수', data: keys.map((key) => leadMap[key] || 0) },
+        { name: '딜수', data: keys.map((key) => dealMap[key] || 0) },
+        { name: '수주 수', data: keys.map((key) => wonMap[key] || 0) }
+      ]
+    };
+  }, [summaryLeads, summaryDeals, periodMode]);
+
   const leadMap = useMemo(() => {
     return leads.reduce((acc, lead) => {
       acc[lead.id] = lead;
@@ -511,7 +963,6 @@ function DashboardPage() {
       loss_reason: deal.loss_reason || ''
     });
     setFormStatus('');
-    setErrorMessage('');
     setIsDealModalOpen(true);
   };
 
@@ -549,10 +1000,11 @@ function DashboardPage() {
       setFormStatus('');
       setIsDealModalOpen(false);
       setEditingDeal(null);
+      showToast('저장되었습니다.', 'success');
     } catch (error) {
       console.error(error);
       setFormStatus('');
-      setErrorMessage('저장에 실패했습니다.');
+      showToast('저장에 실패했습니다.', 'error');
     }
   };
 
@@ -576,10 +1028,10 @@ function DashboardPage() {
       setIsDealModalOpen(false);
       setEditingDeal(null);
       setFormStatus('');
-      setErrorMessage('');
+      showToast('삭제되었습니다.', 'success');
     } catch (error) {
       console.error(error);
-      setErrorMessage('삭제에 실패했습니다.');
+      showToast('삭제에 실패했습니다.', 'error');
     }
   };
 
@@ -596,8 +1048,6 @@ function DashboardPage() {
       }
     });
   };
-
-  const pipelineStages = stageOptions;
 
   const pipelineSeries = useMemo(() => {
     const sums = filteredDeals.reduce((acc, deal) => {
@@ -651,6 +1101,61 @@ function DashboardPage() {
     }
   };
 
+  const pipelineStatusOptions = {
+    chart: {
+      type: 'bar',
+      toolbar: { show: false }
+    },
+    colors: ['#38bdf8', '#f97316', '#22c55e'],
+    dataLabels: {
+      enabled: true,
+      offsetY: -40,
+      style: {
+        colors: [
+          typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark' ? '#f8fafc' : '#0f172a'
+        ],
+        fontSize: '11px',
+        fontWeight: 600
+      }
+    },
+    plotOptions: {
+      bar: {
+        columnWidth: '22px',
+        borderRadius: 4,
+        dataLabels: {
+          position: 'top'
+        }
+      }
+    },
+    xaxis: {
+      categories: statusTrend.categories,
+      labels: { style: { colors: '#94a3b8' } }
+    },
+    yaxis: {
+      labels: { style: { colors: '#94a3b8' } }
+    },
+    grid: { borderColor: 'rgba(148, 163, 184, 0.15)' },
+    legend: {
+      show: true,
+      position: 'top',
+      horizontalAlign: 'right',
+      labels: { colors: '#94a3b8' }
+    },
+    tooltip: {
+      y: {
+        formatter: (value) => `${value}건`
+      }
+    }
+  };
+
+  const summaryStatusOptions = {
+    ...pipelineStatusOptions,
+    xaxis: {
+      ...pipelineStatusOptions.xaxis,
+      categories: summaryStatusTrend.categories
+    }
+  };
+
   return (
     <>
       <section className="content__section content__section--single">
@@ -700,18 +1205,109 @@ function DashboardPage() {
             </div>
             <div className="dashboard__chart">
               <div className="dashboard__chart-canvas">
-                <ReactApexChart options={monthlyOptions} series={monthlySeries} type="bar" height={240} />
+                {monthlyData.length === 0 ? (
+                  <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                ) : (
+                  <ReactApexChart options={monthlyOptions} series={monthlySeries} type="line" height={240} />
+                )}
               </div>
             </div>
           </div>
 
           <div className="dashboard__bottom">
             <div className="dashboard__section">
-              <div className="dashboard__section-title">PipeLine Analysis</div>
-              <div className="dashboard__pipeline">
-                <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
-                  <ReactApexChart options={pipelineOptions} series={pipelineSeries} type="bar" height={200} />
+              <div className="dashboard__section-header dashboard__section-header--split">
+                <div className="dashboard__section-title">PipeLine Analysis</div>
+                <div className="dashboard__section-title">상태별 건수</div>
+              </div>
+              <div className="dashboard__pipeline-row">
+                <div className="dashboard__pipeline">
+                  <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
+                    {pipelineSeries[0]?.data?.every((value) => !value) ? (
+                      <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                    ) : (
+                      <ReactApexChart options={pipelineOptions} series={pipelineSeries} type="bar" height={200} />
+                    )}
+                  </div>
                 </div>
+                <div className="dashboard__pipeline-stats-wrapper">
+                  <div className="dashboard__pipeline-stats">
+                    <div className="dashboard__pipeline-stats-chart">
+                      {statusTrend.categories.length === 0 ? (
+                        <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                      ) : (
+                        <ReactApexChart options={pipelineStatusOptions} series={statusTrend.series} type="bar" height={200} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="dashboard__deal-row">
+            <div className="dashboard__section">
+              <div className="dashboard__section-header">
+                <div className="dashboard__section-title">
+                  {groupMode === 'department' ? '부서별 요약' : '담당자별 요약'}
+                </div>
+                <div className="dashboard__period-toggle">
+                  <button
+                    type="button"
+                    className={`dashboard__period-btn${groupMode === 'department' ? ' dashboard__period-btn--active' : ''}`}
+                    onClick={() => setGroupMode('department')}
+                  >
+                    부서별
+                  </button>
+                  <button
+                    type="button"
+                    className={`dashboard__period-btn${groupMode === 'owner' ? ' dashboard__period-btn--active' : ''}`}
+                    onClick={() => setGroupMode('owner')}
+                  >
+                    담당자별
+                  </button>
+                </div>
+              </div>
+              <div className="dashboard__table">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>{groupMode === 'department' ? '부서' : '담당자'}</th>
+                      <th>수주매출</th>
+                      <th>가중금액</th>
+                      <th>유입리드수</th>
+                      <th>딜수</th>
+                      <th>수주건수</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupedSummary.categories.length === 0 && (
+                      <tr className="data-table__row data-table__row--empty">
+                        <td colSpan={6} className="data-table__empty">데이터가 없습니다.</td>
+                      </tr>
+                    )}
+                    {groupedSummary.categories.map((key, index) => {
+                      const leadCount = groupedSummary.series[0]?.data[index] ?? 0;
+                      const dealCount = groupedSummary.series[1]?.data[index] ?? 0;
+                      const wonCount = groupedSummary.series[2]?.data[index] ?? 0;
+                      const amounts =
+                        groupMode === 'department'
+                          ? ownerSummary.filter((row) => (ownerDepartmentMap[row.owner] || '미지정') === key)
+                          : ownerSummary.filter((row) => row.owner === key);
+                      const wonAmount = amounts.reduce((sum, row) => sum + row.wonAmount, 0);
+                      const weightedAmount = amounts.reduce((sum, row) => sum + row.weightedAmount, 0);
+                      return (
+                        <tr key={key} className="data-table__row" onClick={() => openSummaryModal(key)}>
+                          <td>{key}</td>
+                          <td>{formatAmount(wonAmount)}</td>
+                          <td>{formatAmount(Math.round(weightedAmount))}</td>
+                          <td>{leadCount}</td>
+                          <td>{dealCount}</td>
+                          <td>{wonCount}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
             <div className="dashboard__section">
@@ -729,8 +1325,8 @@ function DashboardPage() {
                   </thead>
                   <tbody>
                     {recentActiveDeals.length === 0 && (
-                      <tr className="data-table__row">
-                        <td colSpan={5}>데이터가 없습니다.</td>
+                      <tr className="data-table__row data-table__row--empty">
+                        <td colSpan={5} className="data-table__empty">데이터가 없습니다.</td>
                       </tr>
                     )}
                     {recentActiveDeals.map((deal) => (
@@ -755,6 +1351,128 @@ function DashboardPage() {
           </div>
         </div>
       </section>
+      {isSummaryModalOpen && (
+        <div className="modal dashboard-summary-modal__wrap">
+          <div className="modal__overlay" onClick={() => setIsSummaryModalOpen(false)} />
+          <div className="modal__content modal__content--white dashboard-summary-modal" role="dialog" aria-modal="true">
+            <div className="modal__header">
+              <div className="modal__title-row modal__title-row--spaced">
+                <h3>요약 상세</h3>
+                <button className="icon-button" type="button" onClick={() => setIsSummaryModalOpen(false)} aria-label="닫기">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
+                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="modal__body dashboard-summary-modal__body">
+              <div className="dashboard-summary-modal__left">
+                <div className="dashboard-summary-modal__panel">
+                  <h4>부서 목록</h4>
+                  <div className="dashboard-summary-modal__list">
+                    {departmentOptions.length === 0 && <p className="table__status">데이터가 없습니다.</p>}
+                    {departmentOptions.map((dept) => (
+                      <button
+                        key={dept}
+                        type="button"
+                        className={`summary-chip${summaryDepartment === dept ? ' summary-chip--active' : ''}`}
+                        onClick={() => {
+                          setSummaryDepartment(dept);
+                          setSummaryOwner('');
+                        }}
+                      >
+                        {dept}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="dashboard-summary-modal__panel">
+                  <h4>담당자 목록</h4>
+                  <div className="dashboard-summary-modal__list">
+                    {ownerOptions.length === 0 && <p className="table__status">데이터가 없습니다.</p>}
+                    {ownerOptions.map((owner) => (
+                      <button
+                        key={owner}
+                        type="button"
+                        className={`summary-chip${summaryOwner === owner ? ' summary-chip--active' : ''}`}
+                        onClick={() => {
+                          setSummaryOwner(owner);
+                          setSummaryDepartment('');
+                        }}
+                      >
+                        {owner}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="dashboard-summary-modal__right">
+                <div className="dashboard__overview dashboard__overview--compact">
+                  <div className="dashboard__overview-cards">
+                    {summaryOverviewStats.map((item) => (
+                      <div className="dashboard__overview-card" key={item.label}>
+                        <span>{item.label}</span>
+                        <strong>
+                          {item.value}
+                          {item.delta && (
+                            <em
+                              className={`dashboard__overview-delta ${item.deltaClass || ''}`}
+                              data-tooltip={item.deltaTooltip || ''}
+                            >
+                              {item.delta}
+                            </em>
+                          )}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="dashboard__section">
+                  <div className="dashboard__section-title">수주액</div>
+                  <div className="dashboard__chart">
+                    <div className="dashboard__chart-canvas">
+                      {summaryMonthlyData.length === 0 ? (
+                        <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                      ) : (
+                        <ReactApexChart options={summaryMonthlyOptions} series={summaryMonthlySeries} type="line" height={220} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="dashboard__section">
+                  <div className="dashboard__section-header dashboard__section-header--split">
+                    <div className="dashboard__section-title">PipeLine Analysis</div>
+                    <div className="dashboard__section-title">상태별 건수</div>
+                  </div>
+                  <div className="dashboard__pipeline-row">
+                    <div className="dashboard__pipeline">
+                      <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
+                        {summaryPipelineSeries[0]?.data?.every((value) => !value) ? (
+                          <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                        ) : (
+                          <ReactApexChart options={pipelineOptions} series={summaryPipelineSeries} type="bar" height={180} />
+                        )}
+                      </div>
+                    </div>
+                    <div className="dashboard__pipeline-stats-wrapper">
+                      <div className="dashboard__pipeline-stats">
+                        <div className="dashboard__pipeline-stats-chart">
+                          {summaryStatusTrend.categories.length === 0 ? (
+                            <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                          ) : (
+                            <ReactApexChart options={summaryStatusOptions} series={summaryStatusTrend.series} type="bar" height={180} />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {isDealModalOpen && editingDeal && (
         <div className="modal">
           <div className="modal__overlay" onClick={() => setIsDealModalOpen(false)} />
@@ -915,7 +1633,6 @@ function DashboardPage() {
                   <button className="project-form__submit project-form__submit--danger" type="button" onClick={handleDelete}>
                     삭제
                   </button>
-                  {errorMessage && <span className="form-error">{errorMessage}</span>}
                 </div>
               </form>
               {showLogPanel && (
@@ -961,6 +1678,7 @@ function DashboardPage() {
         onConfirm={confirmState.onConfirm || (() => setConfirmState({ open: false, message: '', onConfirm: null }))}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
+      {toastMessage && <div className={`toast toast--${toastType}`}>{toastMessage}</div>}
     </>
   );
 }

@@ -175,6 +175,7 @@ function DealsPage() {
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
   const [activityLogs, setActivityLogs] = useState([]);
   const [page, setPage] = useState(1);
   const [stageFilter, setStageFilter] = useState('전체');
@@ -241,7 +242,8 @@ function DealsPage() {
     [stageOptions]
   );
 
-  const showToast = (message) => {
+  const showToast = (message, type = 'success') => {
+    setToastType(type);
     setToastMessage(message);
     window.clearTimeout(showToast.timer);
     showToast.timer = window.setTimeout(() => {
@@ -425,11 +427,12 @@ function DealsPage() {
       setFormData({});
       setFormStatus('');
       setErrorMessage('');
+      showToast(editingId ? '저장되었습니다.' : '등록되었습니다.', 'success');
     } catch (error) {
       console.error(error);
       setFormStatus('error');
       setErrorMessage('저장에 실패했습니다.');
-      showToast('저장에 실패했습니다.');
+      showToast('저장에 실패했습니다.', 'error');
     }
   };
 
@@ -460,10 +463,11 @@ function DealsPage() {
       setFormData({});
       setFormStatus('');
       setErrorMessage('');
+      showToast('삭제되었습니다.', 'success');
     } catch (error) {
       console.error(error);
       setErrorMessage('삭제에 실패했습니다.');
-      showToast('삭제에 실패했습니다.');
+      showToast('삭제에 실패했습니다.', 'error');
     }
   };
 
@@ -702,10 +706,7 @@ function DealsPage() {
         <div className="content__card content__card--wide">
           {status === 'loading' && <p className="table__status">불러오는 중...</p>}
           {status === 'error' && null}
-          {status === 'ready' && filteredDeals.length === 0 && (
-            <p className="table__status">데이터가 없습니다.</p>
-          )}
-          {status === 'ready' && filteredDeals.length > 0 && (
+          {status === 'ready' && (
             <div className="table__wrapper">
               <table className="data-table">
                 <thead>
@@ -724,7 +725,14 @@ function DealsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleDeals.map((deal) => (
+                  {filteredDeals.length === 0 && (
+                    <tr className="data-table__row data-table__row--empty">
+                      <td colSpan={dealColumns.length} className="data-table__empty">
+                        데이터가 없습니다.
+                      </td>
+                    </tr>
+                  )}
+                  {filteredDeals.length > 0 && visibleDeals.map((deal) => (
                     <tr
                       key={deal.id}
                       className={`data-table__row${deal.status === '실주' ? ' data-table__row--disabled' : ''}`}
@@ -1091,7 +1099,7 @@ function DealsPage() {
         onConfirm={confirmState.onConfirm || handleConfirmCancel}
         onCancel={handleConfirmCancel}
       />
-      {toastMessage && <div className="toast">{toastMessage}</div>}
+      {toastMessage && <div className={`toast toast--${toastType}`}>{toastMessage}</div>}
       {isLeadModalOpen && (
         <div className="modal">
           <div className="modal__overlay" onClick={closeLeadModal} />

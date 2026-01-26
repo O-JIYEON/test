@@ -16,7 +16,7 @@ const baseValueColumns = [
 ];
 
 const emptyCategory = { label: '' };
-const emptyValue = { label: '', probability: '', sort_order: 0 };
+const emptyValue = { label: '', department: '', probability: '', sort_order: 0 };
 
 function SettingsPage() {
   const [categories, setCategories] = useState([]);
@@ -77,18 +77,21 @@ function SettingsPage() {
 
   const selectedCategory = categories.find((cat) => cat.id === selectedCategoryId) || null;
   const isPipelineCategory = selectedCategory?.label === '파이프라인 단계' || selectedCategory?.label === '딜단계';
+  const isOwnerCategory = selectedCategory?.label === '담당자';
   const valueColumns = useMemo(() => {
-    if (isPipelineCategory) {
-      return [
-        { key: 'id', label: 'id' },
-        { key: 'label', label: '값' },
-        { key: 'probability', label: '확률' },
-        { key: 'sort_order', label: '정렬' },
-        { key: 'delete', label: '삭제' }
-      ];
+    const columns = [
+      { key: 'id', label: 'id' },
+      { key: 'label', label: '값' }
+    ];
+    if (isOwnerCategory) {
+      columns.push({ key: 'department', label: '부서' });
     }
-    return baseValueColumns;
-  }, [isPipelineCategory]);
+    if (isPipelineCategory) {
+      columns.push({ key: 'probability', label: '확률' });
+    }
+    columns.push({ key: 'sort_order', label: '정렬' }, { key: 'delete', label: '삭제' });
+    return columns;
+  }, [isPipelineCategory, isOwnerCategory]);
 
   const filteredValues = useMemo(() => {
     if (!selectedCategoryId) {
@@ -117,6 +120,7 @@ function SettingsPage() {
     setValueEditingId(value.id);
     setValueForm({
       label: value.label || '',
+      department: value.department || '',
       probability: value.probability ?? '',
       sort_order: value.sort_order ?? 0
     });
@@ -163,6 +167,9 @@ function SettingsPage() {
         isPipelineCategory && valueForm.probability !== '' ? Number(valueForm.probability) : null,
       sort_order: Number(valueForm.sort_order) || 0
     };
+    if (!isOwnerCategory) {
+      delete payload.department;
+    }
     try {
       const response = await fetch(
         valueEditingId ? `${API_BASE}/api/lookup-values/${valueEditingId}` : `${API_BASE}/api/lookup-values`,
@@ -404,6 +411,19 @@ function SettingsPage() {
                 />
                 <span>값</span>
               </label>
+              {isOwnerCategory && (
+                <label className="project-form__field" htmlFor="value-department">
+                  <input
+                    id="value-department"
+                    name="department"
+                    type="text"
+                    placeholder=" "
+                    value={valueForm.department}
+                    onChange={(event) => setValueForm((prev) => ({ ...prev, department: event.target.value }))}
+                  />
+                  <span>부서</span>
+                </label>
+              )}
               {isPipelineCategory && (
                 <label className="project-form__field" htmlFor="value-probability">
                   <input
