@@ -15,8 +15,6 @@ function DashboardPage() {
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [periodMode, setPeriodMode] = useState('year');
-  const [selectedYear, setSelectedYear] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('');
 
   const probabilityByStage = useMemo(() => {
     const map = lookupValues.reduce((acc, value) => {
@@ -210,85 +208,95 @@ function DashboardPage() {
     loadActivityLogs();
   }, []);
 
-  const availableYears = useMemo(() => {
-    const years = new Set();
-    deals.forEach((deal) => {
-      const baseDate = deal.expected_close_date || deal.created_at;
-      const year = getYearLabel(baseDate);
-      if (year) {
-        years.add(year);
-      }
-    });
-    return Array.from(years).sort();
-  }, [deals]);
-
-  const availableMonths = useMemo(() => {
-    const months = new Set();
-    deals.forEach((deal) => {
-      const baseDate = deal.expected_close_date || deal.created_at;
-      const month = getMonthLabel(baseDate);
-      if (month) {
-        months.add(month);
-      }
-    });
-    return Array.from(months).sort();
-  }, [deals]);
-
-  useEffect(() => {
-    if (!selectedYear && availableYears.length) {
-      setSelectedYear(availableYears[availableYears.length - 1]);
-    }
-  }, [availableYears, selectedYear]);
-
-  useEffect(() => {
-    if (!selectedMonth && availableMonths.length) {
-      setSelectedMonth(availableMonths[availableMonths.length - 1]);
-    }
-  }, [availableMonths, selectedMonth]);
-
   const filteredDeals = useMemo(() => {
     if (!deals.length) {
       return [];
     }
-    if (periodMode === 'year' && selectedYear) {
-      return deals.filter((deal) => getYearLabel(deal.expected_close_date || deal.created_at) === selectedYear);
-    }
-    if (periodMode === 'month' && selectedMonth) {
-      return deals.filter((deal) => getMonthLabel(deal.expected_close_date || deal.created_at) === selectedMonth);
-    }
     return deals;
-  }, [deals, periodMode, selectedYear, selectedMonth]);
+  }, [deals]);
+
+  const getWonDateText = (deal) => formatDate(deal.won_date);
+  const getWonYear = (deal) => {
+    const text = getWonDateText(deal);
+    return text ? text.slice(0, 4) : '';
+  };
+  const getWonMonth = (deal) => {
+    const text = getWonDateText(deal);
+    return text ? text.slice(0, 7) : '';
+  };
+  const getWonDay = (deal) => {
+    const text = getWonDateText(deal);
+    return text ? text.slice(0, 10) : '';
+  };
+
+  const monthlyDeals = useMemo(() => {
+    if (!deals.length) {
+      return [];
+    }
+    return deals.filter((deal) => {
+      if (getStatus(deal) !== '수주') {
+        return false;
+      }
+      return Boolean(getWonDateText(deal));
+    });
+  }, [deals]);
 
   const monthlyData = useMemo(() => {
     const buckets = {};
-    filteredDeals.forEach((deal) => {
-      if (getStatus(deal) !== '수주') {
+    if (periodMode === 'year') {
+      deals.forEach((deal) => {
+        if (getStatus(deal) !== '수주') {
+          return;
+        }
+        const label = getWonYear(deal);
+        if (!label) {
+          return;
+        }
+        if (!buckets[label]) {
+          buckets[label] = { label, actual: 0 };
+        }
+        buckets[label].actual += parseAmount(deal.expected_amount);
+      });
+      const entries = Object.values(buckets).sort((a, b) => (a.label > b.label ? 1 : -1));
+      const fallback = [
+        { label: '2024', actual: 520000000 },
+        { label: '2025', actual: 640000000 },
+        { label: '2026', actual: 410000000 }
+      ];
+      const source = entries.length ? entries : fallback;
+      return source.map((item) => ({
+        year: item.label,
+        actual: item.actual,
+        goal: Math.round(item.actual * 0.9)
+      }));
+    }
+    monthlyDeals.forEach((deal) => {
+      const label = getWonMonth(deal);
+      if (!label) {
         return;
       }
-      const month = getMonthLabel(deal.won_date);
-      if (!month) {
-        return;
+      if (!buckets[label]) {
+        buckets[label] = { label, actual: 0 };
       }
-      if (!buckets[month]) {
-        buckets[month] = { month, actual: 0 };
-      }
-      buckets[month].actual += parseAmount(deal.expected_amount);
+      buckets[label].actual += parseAmount(deal.expected_amount);
     });
-    const entries = Object.values(buckets).sort((a, b) => (a.month > b.month ? 1 : -1));
+    const entries = Object.values(buckets).sort((a, b) => (a.label > b.label ? 1 : -1));
     const fallback = [
-      { month: '2026-01', actual: 120000000 },
-      { month: '2026-02', actual: 90000000 },
-      { month: '2026-03', actual: 140000000 },
-      { month: '2026-04', actual: 110000000 },
-      { month: '2026-05', actual: 160000000 }
+      { label: '2026-01', actual: 120000000 },
+      { label: '2026-02', actual: 90000000 },
+      { label: '2026-03', actual: 140000000 },
+      { label: '2026-04', actual: 110000000 },
+      { label: '2026-05', actual: 160000000 }
     ];
     const source = entries.length ? entries : fallback;
     return source.map((item) => ({
-      month: item.month,
+      month: item.label,
       actual: item.actual,
       goal: Math.round(item.actual * 0.9)
     }));
-  }, [filteredDeals]);
+  }, [monthlyDeals, periodMode, deals]);
+
+  const monthlyLabels = monthlyData.map((item) => (periodMode === 'year' ? item.year : item.month));
 
   const monthlySeries = [
     { name: '목표', data: monthlyData.map((item) => item.goal) },
@@ -320,7 +328,7 @@ function DashboardPage() {
     colors: ['#155e75', '#1f6f8a'],
     dataLabels: { enabled: false },
     xaxis: {
-      categories: monthlyData.map((item) => item.month),
+      categories: monthlyLabels,
       labels: { style: { colors: '#94a3b8' } }
     },
     yaxis: {
@@ -339,14 +347,110 @@ function DashboardPage() {
   };
 
   const overviewStats = useMemo(() => {
+    const now = new Date();
+    const currentYear = Number(now.getFullYear());
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const prevYear = String(currentYear - 1);
+    const prevMonth = (() => {
+      const year = now.getMonth() === 0 ? currentYear - 1 : currentYear;
+      const month = now.getMonth() === 0 ? 12 : now.getMonth();
+      return `${year}-${String(month).padStart(2, '0')}`;
+    })();
+
     const won = filteredDeals.reduce((sum, deal) => {
       if (getStatus(deal) !== '수주') {
         return sum;
       }
       return sum + parseAmount(deal.expected_amount);
     }, 0);
-    return [{ label: '총 수주액', value: formatAmount(won) }];
-  }, [filteredDeals]);
+
+    const yearWon = deals.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      if (getYearLabel(deal.won_date) !== String(currentYear)) {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const monthWon = deals.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      if (getMonthLabel(deal.won_date) !== currentMonth) {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const prevYearWon = deals.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      if (getYearLabel(deal.won_date) !== prevYear) {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const prevMonthWon = deals.reduce((sum, deal) => {
+      if (getStatus(deal) !== '수주') {
+        return sum;
+      }
+      if (getMonthLabel(deal.won_date) !== prevMonth) {
+        return sum;
+      }
+      return sum + parseAmount(deal.expected_amount);
+    }, 0);
+
+    const yearDelta = prevYearWon > 0 ? ((yearWon - prevYearWon) / prevYearWon) * 100 : null;
+    const monthDelta = prevMonthWon > 0 ? ((monthWon - prevMonthWon) / prevMonthWon) * 100 : null;
+
+    const formatDelta = (value) => {
+      if (value === null) {
+        return '-';
+      }
+      const sign = value > 0 ? '+' : '';
+      return `${sign}${value.toFixed(1)}%`;
+    };
+
+    const formatTooltip = (value, label) => {
+      if (value === null) {
+        return `${label} 데이터가 없습니다.`;
+      }
+      const direction = value >= 0 ? '증가' : '감소';
+      return `${label} 대비 ${Math.abs(value).toFixed(1)}% ${direction}했습니다.`;
+    };
+
+    return [
+      { label: '총 수주액', value: formatAmount(won) },
+      {
+        label: '금년 수주액',
+        value: formatAmount(yearWon),
+        delta: formatDelta(yearDelta),
+        deltaClass:
+          yearDelta === null
+            ? ''
+            : yearDelta >= 0
+              ? 'dashboard__overview-delta--up'
+              : 'dashboard__overview-delta--down',
+        deltaTooltip: formatTooltip(yearDelta, '전년')
+      },
+      {
+        label: '당월 수주액',
+        value: formatAmount(monthWon),
+        delta: formatDelta(monthDelta),
+        deltaClass:
+          monthDelta === null
+            ? ''
+            : monthDelta >= 0
+              ? 'dashboard__overview-delta--up'
+              : 'dashboard__overview-delta--down',
+        deltaTooltip: formatTooltip(monthDelta, '전월')
+      }
+    ];
+  }, [filteredDeals, deals]);
 
   const recentActiveDeals = useMemo(() => {
     return filteredDeals
@@ -551,73 +655,49 @@ function DashboardPage() {
     <>
       <section className="content__section content__section--single">
         <div className="dashboard">
-          <div className="dashboard__period">
-            <div className="dashboard__period-toggle">
-              <button
-                type="button"
-                className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
-                onClick={() => setPeriodMode('year')}
-              >
-                연도별
-              </button>
-              <button
-                type="button"
-                className={`dashboard__period-btn${periodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
-                onClick={() => setPeriodMode('month')}
-              >
-                월별
-              </button>
-            </div>
-            <div className="dashboard__period-select">
-              {periodMode === 'year' ? (
-                <label className="project-form__field" htmlFor="dashboard-year-select">
-                  <select
-                    id="dashboard-year-select"
-                    value={selectedYear}
-                    onChange={(event) => setSelectedYear(event.target.value)}
-                    data-filled={selectedYear ? 'true' : 'false'}
-                  >
-                    {availableYears.map((year) => (
-                      <option key={year} value={year}>
-                        {year}년
-                      </option>
-                    ))}
-                  </select>
-                  <span>연도</span>
-                </label>
-              ) : (
-                <label className="project-form__field" htmlFor="dashboard-month-select">
-                  <select
-                    id="dashboard-month-select"
-                    value={selectedMonth}
-                    onChange={(event) => setSelectedMonth(event.target.value)}
-                    data-filled={selectedMonth ? 'true' : 'false'}
-                  >
-                    {availableMonths.map((month) => (
-                      <option key={month} value={month}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-                  <span>월</span>
-                </label>
-              )}
-            </div>
-          </div>
-
           <div className="dashboard__overview">
             <div className="dashboard__overview-cards">
               {overviewStats.map((item) => (
                 <div className="dashboard__overview-card" key={item.label}>
                   <span>{item.label}</span>
-                  <strong>{item.value}</strong>
+                  <strong>
+                    {item.value}
+                    {item.delta && (
+                      <em
+                        className={`dashboard__overview-delta ${item.deltaClass || ''}`}
+                        data-tooltip={item.deltaTooltip || ''}
+                      >
+                        {item.delta}
+                      </em>
+                    )}
+                  </strong>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="dashboard__section">
-            <div className="dashboard__section-title">monthly</div>
+            <div className="dashboard__section-header">
+              <div className="dashboard__section-title">수주액</div>
+              <div className="dashboard__period">
+                <div className="dashboard__period-toggle">
+                  <button
+                    type="button"
+                    className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
+                    onClick={() => setPeriodMode('year')}
+                  >
+                    연도별
+                  </button>
+                  <button
+                    type="button"
+                    className={`dashboard__period-btn${periodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
+                    onClick={() => setPeriodMode('month')}
+                  >
+                    월별
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="dashboard__chart">
               <div className="dashboard__chart-canvas">
                 <ReactApexChart options={monthlyOptions} series={monthlySeries} type="bar" height={240} />

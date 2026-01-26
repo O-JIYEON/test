@@ -1416,6 +1416,51 @@ html[data-theme='light'] .dashboard__period-toggle {
 
 .dashboard__overview-card strong {
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard__overview-delta {
+  font-size: 0.85rem;
+  color: var(--muted-text, #94a3b8);
+  font-style: normal;
+  position: relative;
+  cursor: default;
+}
+
+.dashboard__overview-delta::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  color: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+
+.dashboard__overview-delta[data-tooltip='']::after {
+  display: none;
+}
+
+.dashboard__overview-delta:hover::after {
+  opacity: 1;
+}
+
+.dashboard__overview-delta--up {
+  color: #ef4444;
+}
+
+.dashboard__overview-delta--down {
+  color: #3b82f6;
 }
 
 .dashboard__chart {
@@ -1502,6 +1547,13 @@ html[data-theme='light'] .dashboard__period-toggle {
   color: inherit;
 }
 
+.dashboard__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 html[data-theme='light'] .dashboard__filter-cell,
 html[data-theme='light'] .dashboard__overview-card {
   background: #fff;
@@ -1509,6 +1561,11 @@ html[data-theme='light'] .dashboard__overview-card {
 
 html[data-theme='light'] .dashboard__chart {
   background: #fff;
+}
+
+html[data-theme='light'] .dashboard__overview-delta::after {
+  background: #0f172a;
+  color: #f8fafc;
 }
 
 html[data-theme='light'] .dashboard__pipeline,
