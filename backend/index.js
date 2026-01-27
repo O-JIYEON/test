@@ -795,9 +795,23 @@ async function updateDeal(req, res) {
     values.push(id);
 
     connection = await mysql.createConnection(dbConfig);
+    let previousStage = null;
+    const stageIndex = columnNames.indexOf('stage');
+    if (stageIndex !== -1) {
+      const [stageRows] = await connection.query('SELECT stage FROM `deal` WHERE id = ?', [id]);
+      previousStage = stageRows[0]?.stage ?? null;
+    }
     const [result] = await connection.query(`UPDATE \`deal\` SET ${sets} WHERE id = ?`, values);
     const dealLogPayload = await getDealLogPayload(connection, id);
     if (dealLogPayload) {
+      if (stageIndex !== -1) {
+        const nextStage = entries[stageIndex]?.value ?? null;
+        if (nextStage !== previousStage) {
+          const prefix = dealLogPayload.next_action_content ? `${dealLogPayload.next_action_content} / ` : '';
+          dealLogPayload.next_action_content = `${prefix}딜단계 변경: ${previousStage || '미지정'} → ${nextStage || '미지정'}`;
+          dealLogPayload.deal_stage = nextStage;
+        }
+      }
       await createActivityLog(connection, dealLogPayload);
     }
     res.json({ updated: result.affectedRows });
@@ -1432,6 +1446,7 @@ async function getActivityLogs(req, res) {
         activity_logs.activity_date,
         activity_logs.manager,
         activity_logs.sales_owner,
+        activity_logs.deal_stage,
         activity_logs.next_action_date,
         activity_logs.next_action_content,
         lead.lead_code,

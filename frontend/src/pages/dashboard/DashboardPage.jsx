@@ -309,10 +309,23 @@ function DashboardPage() {
     { name: '실적달성액', data: monthlyData.map((item) => item.actual) }
   ];
 
-  const chartGapColor =
-    typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light'
-      ? '#f8fafc'
-      : '#0a0f1e';
+  const [theme, setTheme] = useState(
+    typeof document !== 'undefined' ? document.documentElement.dataset.theme || 'light' : 'light'
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+    const target = document.documentElement;
+    const observer = new MutationObserver(() => {
+      setTheme(target.dataset.theme || 'light');
+    });
+    observer.observe(target, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const chartGapColor = theme === 'light' ? '#f8fafc' : '#0a0f1e';
 
   const monthlyOptions = {
     chart: {
@@ -329,7 +342,9 @@ function DashboardPage() {
       strokeWidth: 0
     },
     colors: ['#38bdf8', '#f97316'],
-    dataLabels: { enabled: false },
+    dataLabels: {
+      enabled: false
+    },
     xaxis: {
       categories: monthlyLabels,
       labels: { style: { colors: '#94a3b8' } }
@@ -795,13 +810,13 @@ function DashboardPage() {
     ];
   };
 
-  const buildMonthlyData = (dealList) => {
+  const buildMonthlyData = (dealList, mode = 'month') => {
     const buckets = {};
     dealList.forEach((deal) => {
       if (getStatus(deal) !== '수주') {
         return;
       }
-      const label = getMonthLabel(deal.won_date);
+      const label = mode === 'year' ? getYearLabel(deal.won_date) : getMonthLabel(deal.won_date);
       if (!label) {
         return;
       }
@@ -864,15 +879,94 @@ function DashboardPage() {
 
   const pipelineStages = stageOptions;
 
+  const summaryLeadMap = useMemo(() => {
+    return summaryLeads.reduce((acc, lead) => {
+      acc[lead.id] = lead;
+      return acc;
+    }, {});
+  }, [summaryLeads]);
+
+  const summaryConversion = useMemo(() => {
+    const leadCount = summaryLeads.length;
+    const dealCount = summaryDeals.length;
+    const wonCount = summaryDeals.filter((deal) => getStatus(deal) === '수주').length;
+    const leadToDeal = leadCount ? (dealCount / leadCount) * 100 : null;
+    const dealToWon = dealCount ? (wonCount / dealCount) * 100 : null;
+
+    const diffDays = summaryDeals
+      .map((deal) => {
+        const lead = summaryLeadMap[deal.lead_id];
+        if (!lead?.created_at || !deal.created_at) {
+          return null;
+        }
+        const leadDate = new Date(String(lead.created_at));
+        const dealDate = new Date(String(deal.created_at));
+        if (Number.isNaN(leadDate.getTime()) || Number.isNaN(dealDate.getTime())) {
+          return null;
+        }
+        const diffTime = dealDate.getTime() - leadDate.getTime();
+        return Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+      })
+      .filter((value) => value !== null);
+    const avgLeadDays = diffDays.length ? Math.round(diffDays.reduce((a, b) => a + b, 0) / diffDays.length) : null;
+
+    return {
+      leadCount,
+      dealCount,
+      wonCount,
+      leadToDeal,
+      dealToWon,
+      avgLeadDays
+    };
+  }, [summaryDeals, summaryLeads, summaryLeadMap]);
+
+  const summaryLossReasons = useMemo(() => {
+    const counts = summaryDeals.reduce((acc, deal) => {
+      if (getStatus(deal) !== '실주') {
+        return acc;
+      }
+      const reason = deal.loss_reason || '';
+      if (!reason) {
+        return acc;
+      }
+      acc[reason] = (acc[reason] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+  }, [summaryDeals]);
+
+  const summaryUpcomingDeals = useMemo(() => {
+    const today = new Date();
+    const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const toDays = (value) => {
+      if (!value) return null;
+      const date = new Date(String(value).slice(0, 10) + 'T00:00:00');
+      if (Number.isNaN(date.getTime())) return null;
+      return Math.ceil((date.getTime() - base.getTime()) / (1000 * 60 * 60 * 24));
+    };
+    return summaryDeals
+      .map((deal) => ({ ...deal, dday: toDays(deal.next_action_date) }))
+      .filter((deal) => deal.dday !== null)
+      .sort((a, b) => a.dday - b.dday)
+      .slice(0, 5);
+  }, [summaryDeals]);
+
   const summaryOverviewStats = useMemo(() => buildOverviewStats(summaryDeals), [summaryDeals]);
-  const summaryMonthlyData = useMemo(() => buildMonthlyData(summaryDeals), [summaryDeals]);
+  const summaryMonthlyData = useMemo(
+    () => buildMonthlyData(summaryDeals, periodMode === 'year' ? 'year' : 'month'),
+    [summaryDeals, periodMode]
+  );
   const summaryMonthlySeries = [
     { name: '목표', data: summaryMonthlyData.map((item) => item.goal) },
     { name: '실적달성액', data: summaryMonthlyData.map((item) => item.actual) }
   ];
   const summaryMonthlyOptions = {
     ...monthlyOptions,
-    dataLabels: { enabled: false },
+    dataLabels: {
+      enabled: false
+    },
     xaxis: {
       ...monthlyOptions.xaxis,
       categories: summaryMonthlyData.map((item) => item.month)
@@ -1049,6 +1143,8 @@ function DashboardPage() {
     });
   };
 
+  const pipelineColors = ['#2563eb', '#16a34a', '#ef4444', '#f59e0b', '#7c3aed', '#14b8a6'];
+
   const pipelineSeries = useMemo(() => {
     const sums = filteredDeals.reduce((acc, deal) => {
       const amount = parseAmount(deal.expected_amount);
@@ -1064,13 +1160,14 @@ function DashboardPage() {
     ];
   }, [filteredDeals, pipelineStages]);
 
-  const pipelineOptions = {
+  const pipelineOptions = useMemo(
+    () => ({
     chart: {
       type: 'bar',
       toolbar: { show: false },
       width: '100%'
     },
-    colors: ['#2563eb', '#16a34a', '#ef4444', '#f59e0b', '#7c3aed', '#14b8a6'],
+    colors: pipelineColors,
     stroke: { colors: ['transparent'] },
     dataLabels: { enabled: false },
     legend: {
@@ -1081,25 +1178,40 @@ function DashboardPage() {
         horizontal: true,
         isFunnel: true,
         borderRadius: 4,
-        distributed: true
+        distributed: true,
+        dataLabels: {
+          position: 'center'
+        }
       }
     },
+    foreColor: theme === 'dark' ? '#e2e8f0' : '#64748b',
     xaxis: {
       categories: pipelineStages,
       labels: {
         formatter: (value) => `${(value / 100000000).toFixed(1)}억`,
-        style: { colors: '#94a3b8' }
+        style: { colors: theme === 'dark' ? '#e2e8f0' : '#64748b' }
       }
     },
     yaxis: {
-      labels: { style: { colors: '#94a3b8' } }
+      labels: {
+        show: false
+      }
+    },
+    grid: {
+      padding: {
+        left: 0,
+        right: 10
+      },
+      borderColor: 'rgba(148, 163, 184, 0.15)'
     },
     tooltip: {
       y: {
         formatter: (value) => `${Number(value).toLocaleString('ko-KR')}원`
       }
     }
-  };
+  }),
+  [pipelineStages, theme]
+  );
 
   const pipelineStatusOptions = {
     chart: {
@@ -1220,16 +1332,22 @@ function DashboardPage() {
                 <div className="dashboard__section-title">PipeLine Analysis</div>
                 <div className="dashboard__section-title">상태별 건수</div>
               </div>
-              <div className="dashboard__pipeline-row">
-                <div className="dashboard__pipeline">
-                  <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
-                    {pipelineSeries[0]?.data?.every((value) => !value) ? (
-                      <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                    ) : (
-                      <ReactApexChart options={pipelineOptions} series={pipelineSeries} type="bar" height={200} />
-                    )}
+                <div className="dashboard__pipeline-row">
+                  <div className="dashboard__pipeline">
+                    <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
+                      {pipelineSeries[0]?.data?.every((value) => !value) ? (
+                        <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                      ) : (
+                        <ReactApexChart
+                          key={`pipeline-${theme}-${pipelineStages.join('-')}`}
+                          options={pipelineOptions}
+                          series={pipelineSeries}
+                          type="bar"
+                          height={200}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
                 <div className="dashboard__pipeline-stats-wrapper">
                   <div className="dashboard__pipeline-stats">
                     <div className="dashboard__pipeline-stats-chart">
@@ -1428,44 +1546,113 @@ function DashboardPage() {
                     ))}
                   </div>
                 </div>
-                <div className="dashboard__section">
-                  <div className="dashboard__section-title">수주액</div>
-                  <div className="dashboard__chart">
-                    <div className="dashboard__chart-canvas">
-                      {summaryMonthlyData.length === 0 ? (
-                        <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                      ) : (
-                        <ReactApexChart options={summaryMonthlyOptions} series={summaryMonthlySeries} type="line" height={220} />
-                      )}
-                    </div>
+                <div className="dashboard-summary-modal__metrics">
+                  <div className="dashboard-summary-modal__metric">
+                    <span>리드 → 딜 전환율</span>
+                    <strong>
+                      {summaryConversion.leadToDeal === null ? '-' : `${summaryConversion.leadToDeal.toFixed(1)}%`}
+                    </strong>
+                  </div>
+                  <div className="dashboard-summary-modal__metric">
+                    <span>딜 → 수주 전환율</span>
+                    <strong>
+                      {summaryConversion.dealToWon === null ? '-' : `${summaryConversion.dealToWon.toFixed(1)}%`}
+                    </strong>
+                  </div>
+                  <div className="dashboard-summary-modal__metric">
+                    <span>평균 리드 전환일</span>
+                    <strong>{summaryConversion.avgLeadDays === null ? '-' : `${summaryConversion.avgLeadDays}일`}</strong>
                   </div>
                 </div>
-                <div className="dashboard__section">
-                  <div className="dashboard__section-header dashboard__section-header--split">
-                    <div className="dashboard__section-title">PipeLine Analysis</div>
-                    <div className="dashboard__section-title">상태별 건수</div>
-                  </div>
-                  <div className="dashboard__pipeline-row">
-                    <div className="dashboard__pipeline">
-                      <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
-                        {summaryPipelineSeries[0]?.data?.every((value) => !value) ? (
+                <div className="dashboard-summary-modal__row">
+                  <div className="dashboard__section">
+                    <div className="dashboard__section-header">
+                      <div className="dashboard__section-title">수주액</div>
+                      <div className="dashboard__period-toggle">
+                        <button
+                          type="button"
+                          className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
+                          onClick={() => setPeriodMode('year')}
+                        >
+                          연도별
+                        </button>
+                        <button
+                          type="button"
+                          className={`dashboard__period-btn${periodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
+                          onClick={() => setPeriodMode('month')}
+                        >
+                          월별
+                        </button>
+                      </div>
+                    </div>
+                    <div className="dashboard__chart">
+                      <div className="dashboard__chart-canvas">
+                        {summaryMonthlyData.length === 0 ? (
                           <p className="table__status table__status--centered">데이터가 없습니다.</p>
                         ) : (
-                          <ReactApexChart options={pipelineOptions} series={summaryPipelineSeries} type="bar" height={180} />
+                          <ReactApexChart options={summaryMonthlyOptions} series={summaryMonthlySeries} type="line" height={220} />
                         )}
                       </div>
                     </div>
+                  </div>
+                  <div className="dashboard__section">
+                    <div className="dashboard__section-title">상태별 건수</div>
                     <div className="dashboard__pipeline-stats-wrapper">
                       <div className="dashboard__pipeline-stats">
                         <div className="dashboard__pipeline-stats-chart">
                           {summaryStatusTrend.categories.length === 0 ? (
                             <p className="table__status table__status--centered">데이터가 없습니다.</p>
                           ) : (
-                            <ReactApexChart options={summaryStatusOptions} series={summaryStatusTrend.series} type="bar" height={180} />
+                            <ReactApexChart options={summaryStatusOptions} series={summaryStatusTrend.series} type="bar" height={220} />
                           )}
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+                <div className="dashboard-summary-modal__loss">
+                  <div className="dashboard__section-title">실주 사유 Top 3</div>
+                  {summaryLossReasons.length === 0 ? (
+                    <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                  ) : (
+                    <div className="dashboard-summary-modal__loss-list">
+                      {summaryLossReasons.map(([reason, count]) => (
+                        <div className="dashboard-summary-modal__loss-item" key={reason}>
+                          <span>{reason}</span>
+                          <strong>{count}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="dashboard-summary-modal__upcoming">
+                  <div className="dashboard__section-title">다음액션 임박 딜</div>
+                  <div className="dashboard__table">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Deal ID</th>
+                          <th>회사명</th>
+                          <th>다음액션일</th>
+                          <th>D-day</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summaryUpcomingDeals.length === 0 && (
+                          <tr className="data-table__row data-table__row--empty">
+                            <td colSpan={4} className="data-table__empty">데이터가 없습니다.</td>
+                          </tr>
+                        )}
+                        {summaryUpcomingDeals.map((deal) => (
+                          <tr key={deal.id} className="data-table__row">
+                            <td>{deal.deal_code || deal.id}</td>
+                            <td>{deal.company || '-'}</td>
+                            <td>{formatDate(deal.next_action_date) || '-'}</td>
+                            <td>{deal.dday === 0 ? 'D-day' : deal.dday > 0 ? `D-${deal.dday}` : `D+${Math.abs(deal.dday)}`}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>

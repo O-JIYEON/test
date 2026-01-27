@@ -1066,6 +1066,9 @@ function DealsPage() {
                         <div className="deal-modal__log-item" key={log.id}>
                           <div className="deal-modal__log-header">
                             <span className="deal-modal__log-date">{formatDate(log.activity_date)}</span>
+                            {log.deal_stage && (
+                              <span className="deal-modal__log-badge">{log.deal_stage}</span>
+                            )}
                           </div>
                           <div className="deal-modal__log-row">
                             <span className="deal-modal__log-label">담당자</span>
