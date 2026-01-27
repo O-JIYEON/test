@@ -807,8 +807,9 @@ async function updateDeal(req, res) {
       if (stageIndex !== -1) {
         const nextStage = entries[stageIndex]?.value ?? null;
         if (nextStage !== previousStage) {
-          const prefix = dealLogPayload.next_action_content ? `${dealLogPayload.next_action_content} / ` : '';
-          dealLogPayload.next_action_content = `${prefix}딜단계 변경: ${previousStage || '미지정'} → ${nextStage || '미지정'}`;
+          // 딜 단계는 별도 컬럼에 저장하고, 다음액션내용에는 섞지 않음
+          dealLogPayload.deal_stage = nextStage;
+        } else {
           dealLogPayload.deal_stage = nextStage;
         }
       }

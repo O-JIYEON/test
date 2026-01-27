@@ -2,6 +2,33 @@ import ReactApexChart from 'react-apexcharts';
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
+const useCountUp = (value, duration = 300) => {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (value === null || value === undefined) {
+      setDisplay(0);
+      return;
+    }
+    const start = performance.now();
+    const from = 0;
+    const to = Number(value) || 0;
+    let raf;
+    const tick = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const next = Math.round(from + (to - from) * progress);
+      setDisplay(next);
+      if (progress < 1) {
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+
+  return display;
+};
+
 function DashboardPage() {
   const [deals, setDeals] = useState([]);
   const [lookupValues, setLookupValues] = useState([]);
@@ -369,7 +396,7 @@ function DashboardPage() {
     }
   };
 
-  const overviewStats = useMemo(() => {
+  const overviewRaw = useMemo(() => {
     const now = new Date();
     const currentYear = Number(now.getFullYear());
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -445,35 +472,83 @@ function DashboardPage() {
       const direction = value >= 0 ? '증가' : '감소';
       return `${label} 대비 ${Math.abs(value).toFixed(1)}% ${direction}했습니다.`;
     };
-
-    return [
-      { label: '총 수주액', value: formatAmount(won) },
-      {
-        label: '금년 수주액',
-        value: formatAmount(yearWon),
-        delta: formatDelta(yearDelta),
-        deltaClass:
-          yearDelta === null
-            ? ''
-            : yearDelta >= 0
-              ? 'dashboard__overview-delta--up'
-              : 'dashboard__overview-delta--down',
-        deltaTooltip: formatTooltip(yearDelta, '전년')
-      },
-      {
-        label: '당월 수주액',
-        value: formatAmount(monthWon),
-        delta: formatDelta(monthDelta),
-        deltaClass:
-          monthDelta === null
-            ? ''
-            : monthDelta >= 0
-              ? 'dashboard__overview-delta--up'
-              : 'dashboard__overview-delta--down',
-        deltaTooltip: formatTooltip(monthDelta, '전월')
+    const formatDeltaParts = (value, label) => {
+      if (value === null) {
+        return { prefix: '-', trend: '', suffix: '' };
       }
-    ];
+      const direction = value >= 0 ? '증가' : '감소';
+      return {
+        prefix: `${label} 대비 `,
+        trend: `${Math.abs(value).toFixed(1)}% ${direction}`,
+        suffix: '했습니다.'
+      };
+    };
+
+    return {
+      won,
+      yearWon,
+      monthWon,
+      yearDelta,
+      monthDelta,
+      formatDelta,
+      formatTooltip,
+      formatDeltaParts
+    };
   }, [filteredDeals, deals]);
+
+  const animatedTotalWon = useCountUp(overviewRaw.won, 500);
+  const animatedYearWon = useCountUp(overviewRaw.yearWon, 500);
+  const animatedMonthWon = useCountUp(overviewRaw.monthWon, 500);
+
+  const overviewLeadCount = leads.filter((lead) => !lead.deleted_at && !lead.deletedAt).length;
+  const overviewDealCount = deals.filter((deal) => !deal.deleted_at && !deal.deletedAt).length;
+  const overviewWonCount = deals.filter(
+    (deal) => !deal.deleted_at && !deal.deletedAt && getStatus(deal) === '수주'
+  ).length;
+  const leadToDealRate = overviewLeadCount ? (overviewDealCount / overviewLeadCount) * 100 : null;
+  const dealToWonRate = overviewDealCount ? (overviewWonCount / overviewDealCount) * 100 : null;
+  const animatedLeadToDealRate = useCountUp(leadToDealRate ?? 0, 500);
+  const animatedDealToWonRate = useCountUp(dealToWonRate ?? 0, 500);
+
+  const overviewStats = [
+    { label: '총 수주액', value: formatAmount(animatedTotalWon) },
+    {
+      label: '금년 수주액',
+      value: formatAmount(animatedYearWon),
+      delta: overviewRaw.formatDelta(overviewRaw.yearDelta),
+      deltaParts: overviewRaw.formatDeltaParts(overviewRaw.yearDelta, '전년'),
+      deltaClass:
+        overviewRaw.yearDelta === null
+          ? ''
+          : overviewRaw.yearDelta >= 0
+            ? 'dashboard__overview-delta--up'
+            : 'dashboard__overview-delta--down',
+      deltaTooltip: overviewRaw.formatTooltip(overviewRaw.yearDelta, '전년')
+    },
+    {
+      label: '당월 수주액',
+      value: formatAmount(animatedMonthWon),
+      delta: overviewRaw.formatDelta(overviewRaw.monthDelta),
+      deltaParts: overviewRaw.formatDeltaParts(overviewRaw.monthDelta, '전월'),
+      deltaClass:
+        overviewRaw.monthDelta === null
+          ? ''
+          : overviewRaw.monthDelta >= 0
+            ? 'dashboard__overview-delta--up'
+            : 'dashboard__overview-delta--down',
+      deltaTooltip: overviewRaw.formatTooltip(overviewRaw.monthDelta, '전월')
+    },
+    {
+      label: '리드 → 딜 전환율',
+      value: leadToDealRate === null ? '-' : animatedLeadToDealRate.toFixed(1),
+      unit: '%'
+    },
+    {
+      label: '딜 → 수주 전환율',
+      value: dealToWonRate === null ? '-' : animatedDealToWonRate.toFixed(1),
+      unit: '%'
+    }
+  ];
 
   const recentActiveDeals = useMemo(() => {
     return filteredDeals
@@ -1273,21 +1348,26 @@ function DashboardPage() {
       <section className="content__section content__section--single">
         <div className="dashboard">
           <div className="dashboard__overview">
-            <div className="dashboard__overview-cards">
+            <div className="dashboard__overview-cards dashboard__overview-cards--hero">
               {overviewStats.map((item) => (
-                <div className="dashboard__overview-card" key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>
-                    {item.value}
+                <div className="dashboard__overview-card dashboard__overview-card--hero" key={item.label}>
+                  <div className="dashboard__overview-content">
+                    <span className="dashboard__overview-label">{item.label}</span>
+                    <strong className="dashboard__overview-value">
+                      {item.value}
+                      {item.label.includes('수주액') && <span className="dashboard__overview-unit">원</span>}
+                      {item.unit && item.value !== '-' && <span className="dashboard__overview-unit">{item.unit}</span>}
+                    </strong>
                     {item.delta && (
-                      <em
-                        className={`dashboard__overview-delta ${item.deltaClass || ''}`}
-                        data-tooltip={item.deltaTooltip || ''}
-                      >
-                        {item.delta}
+                      <em className="dashboard__overview-delta">
+                        {item.deltaParts?.prefix === '-' ? '-' : item.deltaParts?.prefix || ''}
+                        <span className={`dashboard__overview-delta-text ${item.deltaClass || ''}`}>
+                          {item.deltaParts?.prefix === '-' ? '' : item.deltaParts?.trend || item.delta}
+                        </span>
+                        {item.deltaParts?.prefix === '-' ? '' : item.deltaParts?.suffix || ''}
                       </em>
                     )}
-                  </strong>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1297,7 +1377,7 @@ function DashboardPage() {
             <div className="dashboard__section-header">
               <div className="dashboard__section-title">수주액</div>
               <div className="dashboard__period">
-                <div className="dashboard__period-toggle">
+                <div className="dashboard__period-toggle" data-active-index={periodMode === 'month' ? '1' : '0'}>
                   <button
                     type="button"
                     className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
@@ -1368,7 +1448,7 @@ function DashboardPage() {
                 <div className="dashboard__section-title">
                   {groupMode === 'department' ? '부서별 요약' : '담당자별 요약'}
                 </div>
-                <div className="dashboard__period-toggle">
+                <div className="dashboard__period-toggle" data-active-index={groupMode === 'owner' ? '1' : '0'}>
                   <button
                     type="button"
                     className={`dashboard__period-btn${groupMode === 'department' ? ' dashboard__period-btn--active' : ''}`}
@@ -1568,7 +1648,7 @@ function DashboardPage() {
                   <div className="dashboard__section">
                     <div className="dashboard__section-header">
                       <div className="dashboard__section-title">수주액</div>
-                      <div className="dashboard__period-toggle">
+                      <div className="dashboard__period-toggle" data-active-index={periodMode === 'month' ? '1' : '0'}>
                         <button
                           type="button"
                           className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}

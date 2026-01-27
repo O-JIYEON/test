@@ -16,6 +16,7 @@ const columns = [
   { key: 'manager', label: '담당자' },
   { key: 'next_action_date', label: '다음액션일' },
   { key: 'next_action_content', label: '다음액션내용' },
+  { key: 'deal_stage', label: '딜 단계' },
   { key: 'sales_owner', label: '담당자(영업)' }
 ];
 
@@ -198,6 +199,14 @@ function ActivitiesPage() {
                               </button>
                             </td>
                           );
+                        }
+                        if (column.key === 'next_action_content') {
+                          const value = log[column.key] || '';
+                          const cleaned = value.split(' / 딜단계 변경:')[0].trim();
+                          return <td key={column.key}>{cleaned || '-'}</td>;
+                        }
+                        if (column.key === 'deal_stage') {
+                          return <td key={column.key}>{log.deal_stage || '-'}</td>;
                         }
                         return <td key={column.key}>{log[column.key] ?? ''}</td>;
                       })}

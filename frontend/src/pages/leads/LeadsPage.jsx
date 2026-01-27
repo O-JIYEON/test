@@ -763,7 +763,15 @@ function LeadsPage() {
                       <th
                         key={column.key}
                         className={
-                          ['owner', 'contact', 'email'].includes(column.key) ? 'lead-table__optional' : ''
+                          [
+                            'owner',
+                            'contact',
+                            'email'
+                          ].includes(column.key)
+                            ? 'lead-table__optional'
+                            : ['created_at', 'source', 'product_line', 'segment'].includes(column.key)
+                              ? 'lead-table__wide'
+                              : ''
                         }
                       >
                         <button
@@ -804,7 +812,9 @@ function LeadsPage() {
                       {leadColumns.map((column) => {
                         const cellClassName = ['owner', 'contact', 'email'].includes(column.key)
                           ? 'lead-table__optional'
-                          : '';
+                          : ['created_at', 'source', 'product_line', 'segment'].includes(column.key)
+                            ? 'lead-table__wide'
+                            : '';
                         if (column.key === 'id') {
                           return (
                             <td key={column.key} className={cellClassName}>

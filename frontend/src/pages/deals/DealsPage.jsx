@@ -713,7 +713,9 @@ function DealsPage() {
                   <tr>
                     {dealColumns.map((column) => {
                       const headerClassName =
-                        column.key === 'created_at' || column.key === 'owner'
+                        column.key === 'created_at' ||
+                        column.key === 'owner' ||
+                        ['loss_reason', 'inactive_days', 'expected_close_date', 'won_date'].includes(column.key)
                           ? 'deal-table__hide'
                           : '';
                       return (
@@ -740,7 +742,9 @@ function DealsPage() {
                     >
                       {dealColumns.map((column) => {
                         const cellClassName =
-                          column.key === 'created_at' || column.key === 'owner'
+                          column.key === 'created_at' ||
+                          column.key === 'owner' ||
+                          ['loss_reason', 'inactive_days', 'expected_close_date', 'won_date'].includes(column.key)
                             ? 'deal-table__hide'
                             : '';
                         if (column.key === 'lead_code') {
@@ -790,10 +794,11 @@ function DealsPage() {
                           const dday = getDdayText(deal[column.key]);
                           const urgent =
                             (dday.startsWith('D-') && Number(dday.slice(2)) <= 5) || dday.startsWith('D+');
+                          const showDday = deal.stage !== '수주' && deal.stage !== '실주';
                           return (
-                            <td key={column.key} className={cellClassName}>
+                            <td key={column.key} className={`${cellClassName} deal-table__date`}>
                               {formatted}
-                              {dday && (
+                              {showDday && dday && (
                                 <span className={`lead-dday${urgent ? ' lead-dday--urgent' : ''}`}>
                                   ({dday})
                                 </span>
