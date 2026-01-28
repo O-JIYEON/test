@@ -601,7 +601,7 @@ function CustomersPage() {
           <div className="content__section-title-row">
             <h3 className="content__section-title">담당자 목록</h3>
             <span className="content__section-meta">
-              선택 고객사: {selectedCustomer?.company ?? '없음'}
+              {selectedCustomer?.company ?? '없음'}
             </span>
           </div>
           <div className="content__card content__card--wide">

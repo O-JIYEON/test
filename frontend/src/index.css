@@ -1337,6 +1337,10 @@ html[data-theme='dark'] .lead-info__value {
   white-space: nowrap;
 }
 
+.deal-table__nowrap {
+  white-space: nowrap;
+}
+
 .data-table th {
   font-weight: 700;
 }
@@ -1743,6 +1747,10 @@ html[data-theme='dark'] .dashboard__overview-card--hero + .dashboard__overview-c
   margin-bottom: 12px;
 }
 
+.dashboard__deal-nowrap {
+  white-space: nowrap;
+}
+
 
 .dashboard__bottom {
   display: flex;
@@ -1752,7 +1760,7 @@ html[data-theme='dark'] .dashboard__overview-card--hero + .dashboard__overview-c
 
 .dashboard__deal-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
   gap: 16px;
 }
 
@@ -2165,6 +2173,37 @@ html[data-theme='dark'] .dashboard__pipeline-chart .apexcharts-data-labels text 
   padding: 16px;
   background: #fff;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.dashboard__table--scroll {
+  max-height: none;
+  overflow: visible;
+  padding: 16px;
+}
+
+.dashboard__table--scroll .table__wrapper {
+  max-height: 268px;
+  overflow-y: auto;
+  margin-top: 0;
+}
+
+.dashboard__table--scroll .table__wrapper table {
+  margin-bottom: 0;
+}
+
+.dashboard__table--scroll .table__wrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: inherit;
+}
+
+html[data-theme='light'] .dashboard__table--scroll .table__wrapper thead th {
+  background: #ffffff;
+}
+
+html[data-theme='dark'] .dashboard__table--scroll .table__wrapper thead th {
+  background: #0f1b2d;
 }
 
 .dashboard__table-title {

@@ -561,8 +561,7 @@ function DashboardPage() {
         const aTime = new Date(a.created_at || a.updated_at || 0).getTime();
         const bTime = new Date(b.created_at || b.updated_at || 0).getTime();
         return bTime - aTime;
-      })
-      .slice(0, 5);
+      });
   }, [filteredDeals]);
 
   const activeLeadsCount = useMemo(() => {
@@ -1515,7 +1514,7 @@ function DashboardPage() {
                   </button>
                 </div>
               </div>
-              <div className="dashboard__table">
+              <div className="dashboard__table dashboard__table--scroll">
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -1578,40 +1577,42 @@ function DashboardPage() {
             </div>
             <div className="dashboard__section">
               <div className="dashboard__section-title">진행중인 딜</div>
-              <div className="dashboard__table">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Deal ID</th>
-                      <th>회사명</th>
-                      <th>프로젝트/건명</th>
-                      <th>예상금액(원)</th>
-                      <th>확률</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentActiveDeals.length === 0 && (
-                      <tr className="data-table__row data-table__row--empty">
-                        <td colSpan={5} className="data-table__empty">데이터가 없습니다.</td>
+              <div className="dashboard__table dashboard__table--scroll">
+                <div className="table__wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Deal ID</th>
+                        <th>회사명</th>
+                        <th>프로젝트/건명</th>
+                        <th>예상금액(원)</th>
+                        <th>확률</th>
                       </tr>
-                    )}
-                    {recentActiveDeals.map((deal) => (
-                      <tr
-                        key={deal.id}
-                        className="data-table__row"
-                        onClick={() => {
-                          openEditModal(deal);
-                        }}
-                      >
-                        <td>{deal.deal_code || deal.id}</td>
-                        <td>{deal.company || '-'}</td>
-                        <td>{deal.project_name || '-'}</td>
-                        <td>{formatAmount(parseAmount(deal.expected_amount))}</td>
-                        <td>{deal.stage ? `${probabilityByStage[deal.stage] ?? 0}%` : '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {recentActiveDeals.length === 0 && (
+                        <tr className="data-table__row data-table__row--empty">
+                          <td colSpan={5} className="data-table__empty">데이터가 없습니다.</td>
+                        </tr>
+                      )}
+                      {recentActiveDeals.map((deal) => (
+                        <tr
+                          key={deal.id}
+                          className="data-table__row"
+                          onClick={() => {
+                            openEditModal(deal);
+                          }}
+                        >
+                          <td>{deal.deal_code || deal.id}</td>
+                          <td className="dashboard__deal-nowrap">{deal.company || '-'}</td>
+                          <td>{deal.project_name || '-'}</td>
+                          <td className="dashboard__deal-nowrap">{formatAmount(parseAmount(deal.expected_amount))}</td>
+                          <td>{deal.stage ? `${probabilityByStage[deal.stage] ?? 0}%` : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>

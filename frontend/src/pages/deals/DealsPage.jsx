@@ -775,6 +775,13 @@ function DealsPage() {
                             </td>
                           );
                         }
+                        if (column.key === 'company' || column.key === 'stage' || column.key === 'customer_owner') {
+                          return (
+                            <td key={column.key} className={`${cellClassName} deal-table__nowrap`}>
+                              {deal[column.key] ?? '-'}
+                            </td>
+                          );
+                        }
                         if (column.key === 'expected_amount' || column.key === 'weighted_amount') {
                           return (
                             <td key={column.key} className={cellClassName}>

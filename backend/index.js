@@ -422,7 +422,7 @@ async function ensureDealForLead(connection, lead) {
     return { created: false };
   }
   const [existing] = await connection.query(
-    'SELECT id FROM `deal` WHERE lead_id = ? LIMIT 1 FOR UPDATE',
+    'SELECT id FROM `deal` WHERE lead_id = ? AND deleted_at IS NULL LIMIT 1 FOR UPDATE',
     [lead.id]
   );
   if (existing.length > 0) {
@@ -447,12 +447,14 @@ async function ensureDealForLead(connection, lead) {
     result.insertId
   ]);
   const createdAt = dealRows[0]?.created_at || new Date();
-  const seq = await getNextDailySequence(connection, 'deal', 'deal_code', '-D', createdAt);
+  const kstDate = new Date(new Date(createdAt).getTime() + 9 * 60 * 60 * 1000);
+  const kstDateKey = kstDate.toISOString().slice(0, 10).replace(/-/g, '');
+  const seq = await getNextDailySequence(connection, 'deal', 'deal_code', '-D', kstDate);
   await connection.query(
     `UPDATE \`deal\`
-     SET deal_code = CONCAT(DATE_FORMAT(created_at, '%Y%m%d'), '-D', ?)
+     SET deal_code = CONCAT(?, '-D', ?)
      WHERE id = ?`,
-    [seq, result.insertId]
+    [kstDateKey, seq, result.insertId]
   );
   const dealLogPayload = await getDealLogPayload(connection, result.insertId);
   if (dealLogPayload) {
@@ -722,17 +724,19 @@ async function createDeal(req, res) {
       `INSERT INTO \`deal\` (${fieldNames}) VALUES (${placeholders})`,
       normalizedValues
     );
-    const [dealRows] = await connection.query('SELECT created_at FROM `deal` WHERE id = ?', [
-      result.insertId
-    ]);
-    const createdAt = dealRows[0]?.created_at || new Date();
-    const seq = await getNextDailySequence(connection, 'deal', 'deal_code', '-D', createdAt);
-    await connection.query(
-      `UPDATE \`deal\`
-       SET deal_code = CONCAT(DATE_FORMAT(created_at, '%Y%m%d'), '-D', ?)
-       WHERE id = ?`,
-      [seq, result.insertId]
-    );
+  const [dealRows] = await connection.query('SELECT created_at FROM `deal` WHERE id = ?', [
+    result.insertId
+  ]);
+  const createdAt = dealRows[0]?.created_at || new Date();
+  const kstDate = new Date(new Date(createdAt).getTime() + 9 * 60 * 60 * 1000);
+  const kstDateKey = kstDate.toISOString().slice(0, 10).replace(/-/g, '');
+  const seq = await getNextDailySequence(connection, 'deal', 'deal_code', '-D', kstDate);
+  await connection.query(
+    `UPDATE \`deal\`
+      SET deal_code = CONCAT(?, '-D', ?)
+      WHERE id = ?`,
+    [kstDateKey, seq, result.insertId]
+  );
     const dealLogPayload = await getDealLogPayload(connection, result.insertId);
     if (dealLogPayload) {
       await createActivityLog(connection, dealLogPayload);
