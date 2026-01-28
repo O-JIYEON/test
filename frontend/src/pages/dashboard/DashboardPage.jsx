@@ -48,6 +48,10 @@ function DashboardPage() {
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [summaryDepartment, setSummaryDepartment] = useState('');
   const [summaryOwner, setSummaryOwner] = useState('');
+  const [goals, setGoals] = useState([]);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [goalDraft, setGoalDraft] = useState(null);
+  const [goalTab, setGoalTab] = useState('year');
 
   const showToast = (message, type = 'success') => {
     setToastType(type);
@@ -245,7 +249,20 @@ function DashboardPage() {
         console.error(error);
       }
     };
+    const loadGoals = async () => {
+      try {
+        const response = await fetch(`http://${window.location.hostname}:5001/api/goals`);
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch goals');
+        }
+        setGoals(data.goals || []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
     loadLookupValues();
+    loadGoals();
     loadLeads();
     loadActivityLogs();
   }, []);
@@ -497,6 +514,30 @@ function DashboardPage() {
     };
   }, [filteredDeals, deals]);
 
+  const currentPeriodKeys = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return {
+      yearStart: `${year}-01-01`,
+      monthStart: `${year}-${month}-01`
+    };
+  }, []);
+
+  const goalMap = useMemo(() => {
+    return goals.reduce((acc, goal) => {
+      if (!goal.period_type || !goal.period_start) {
+        return acc;
+      }
+      const key = `${goal.period_type}:${String(goal.period_start).slice(0, 10)}`;
+      acc[key] = Number(goal.amount) || 0;
+      return acc;
+    }, {});
+  }, [goals]);
+
+  const yearGoal = goalMap[`year:${currentPeriodKeys.yearStart}`] ?? null;
+  const monthGoal = goalMap[`month:${currentPeriodKeys.monthStart}`] ?? null;
+
   const animatedTotalWon = useCountUp(overviewRaw.won, 500);
   const animatedYearWon = useCountUp(overviewRaw.yearWon, 500);
   const animatedMonthWon = useCountUp(overviewRaw.monthWon, 500);
@@ -516,6 +557,8 @@ function DashboardPage() {
     {
       label: '금년 수주액',
       value: formatAmount(animatedYearWon),
+      goalValue: yearGoal,
+      goalType: 'year',
       delta: overviewRaw.formatDelta(overviewRaw.yearDelta),
       deltaParts: overviewRaw.formatDeltaParts(overviewRaw.yearDelta, '전년'),
       deltaClass:
@@ -529,6 +572,8 @@ function DashboardPage() {
     {
       label: '당월 수주액',
       value: formatAmount(animatedMonthWon),
+      goalValue: monthGoal,
+      goalType: 'month',
       delta: overviewRaw.formatDelta(overviewRaw.monthDelta),
       deltaParts: overviewRaw.formatDeltaParts(overviewRaw.monthDelta, '전월'),
       deltaClass:
@@ -1393,6 +1438,75 @@ function DashboardPage() {
     }
   };
 
+  const openGoalModal = () => {
+    setIsGoalModalOpen(true);
+  };
+
+  const openGoalDraft = () => {
+    setGoalDraft({
+      period: goalTab === 'year' ? currentPeriodKeys.yearStart.slice(0, 4) : currentPeriodKeys.monthStart.slice(0, 7),
+      amount: ''
+    });
+  };
+
+  const handleGoalDraftChange = (field) => (event) => {
+    const raw = event.target.value || '';
+    const next = field === 'period' && goalTab === 'month'
+      ? raw.replace(/[^\d-]/g, '')
+      : raw.replace(/[^\d]/g, '');
+    setGoalDraft((prev) => ({ ...prev, [field]: next }));
+  };
+
+  const saveGoalDraft = async () => {
+    try {
+      if (!goalDraft?.period || !goalDraft?.amount) {
+        showToast('기간과 금액을 입력하세요.', 'error');
+        return;
+      }
+      const payload = {
+        period_type: goalTab,
+        period_start: goalTab === 'year' ? `${goalDraft.period}-01-01` : `${goalDraft.period}-01`,
+        amount: goalDraft.amount
+      };
+      const response = await fetch(`http://${window.location.hostname}:5001/api/goals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save goals');
+      }
+      const refreshed = await fetch(`http://${window.location.hostname}:5001/api/goals`);
+      const refreshedData = await refreshed.json();
+      if (refreshed.ok) {
+        setGoals(refreshedData.goals || []);
+      }
+      setGoalDraft(null);
+      showToast('목표가 저장되었습니다.', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('목표 저장에 실패했습니다.', 'error');
+    }
+  };
+
+  const goalRows = useMemo(() => {
+    return goals
+      .filter((goal) => goal.period_type === goalTab)
+      .sort((a, b) => String(b.period_start).localeCompare(String(a.period_start)));
+  }, [goals, goalTab]);
+
+  const formatGoalPeriod = (goal) => {
+    if (!goal?.period_start) {
+      return '-';
+    }
+    const text = String(goal.period_start).slice(0, 10);
+    if (goal.period_type === 'year') {
+      return text.slice(0, 4);
+    }
+    return text.slice(0, 7);
+  };
+
   return (
     <>
       <section className="content__section content__section--single">
@@ -1408,6 +1522,11 @@ function DashboardPage() {
                       {item.label.includes('수주액') && <span className="dashboard__overview-unit">원</span>}
                       {item.unit && item.value !== '-' && <span className="dashboard__overview-unit">{item.unit}</span>}
                     </strong>
+                    {item.goalType && (
+                      <button type="button" className="dashboard__overview-goal" onClick={openGoalModal}>
+                        목표 {item.goalValue === null ? '-' : formatAmount(item.goalValue)}
+                      </button>
+                    )}
                     {item.delta && (
                       <em className="dashboard__overview-delta">
                         {item.deltaParts?.prefix === '-' ? '-' : item.deltaParts?.prefix || ''}
@@ -1515,42 +1634,55 @@ function DashboardPage() {
                   </button>
                 </div>
               </div>
-              <div className="dashboard__table dashboard__table--scroll">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      {groupMode === 'department' ? (
-                        <>
-                          <th>부서</th>
-                          <th>수주매출</th>
-                          <th>가중금액</th>
-                          <th>리드수</th>
-                          <th>딜수</th>
-                          <th>수주수</th>
-                        </>
-                      ) : (
-                        <>
-                          <th>부서</th>
-                          <th>담당자</th>
-                          <th>수주매출</th>
-                          <th>가중금액</th>
-                          <th>리드수</th>
-                          <th>딜수</th>
-                          <th>수주수</th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summaryRows.length === 0 && (
-                      <tr className="data-table__row data-table__row--empty">
-                        <td colSpan={groupMode === 'department' ? 6 : 7} className="data-table__empty">데이터가 없습니다.</td>
+              <div className="dashboard__table dashboard__table--plain">
+                <div className="table__wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {groupMode === 'department' ? (
+                          <>
+                            <th>부서</th>
+                            <th>수주매출</th>
+                            <th>가중금액</th>
+                            <th>리드수</th>
+                            <th>딜수</th>
+                            <th>수주수</th>
+                          </>
+                        ) : (
+                          <>
+                            <th>부서</th>
+                            <th>담당자</th>
+                            <th>수주매출</th>
+                            <th>가중금액</th>
+                            <th>리드수</th>
+                            <th>딜수</th>
+                            <th>수주수</th>
+                          </>
+                        )}
                       </tr>
-                    )}
-                    {summaryRows.map((row) => {
-                      if (groupMode === 'department') {
+                    </thead>
+                    <tbody>
+                      {summaryRows.length === 0 && (
+                        <tr className="data-table__row data-table__row--empty">
+                          <td colSpan={groupMode === 'department' ? 6 : 7} className="data-table__empty">데이터가 없습니다.</td>
+                        </tr>
+                      )}
+                      {summaryRows.map((row) => {
+                        if (groupMode === 'department') {
+                          return (
+                            <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
+                              <td>{row.key}</td>
+                              <td>{formatAmount(row.wonAmount)}</td>
+                              <td>{formatAmount(Math.round(row.weightedAmount))}</td>
+                              <td>{row.leadCount}</td>
+                              <td>{row.dealCount}</td>
+                              <td>{row.wonCount}</td>
+                            </tr>
+                          );
+                        }
                         return (
                           <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
+                            <td>{ownerDepartmentMap[row.key] || '미지정'}</td>
                             <td>{row.key}</td>
                             <td>{formatAmount(row.wonAmount)}</td>
                             <td>{formatAmount(Math.round(row.weightedAmount))}</td>
@@ -1559,25 +1691,17 @@ function DashboardPage() {
                             <td>{row.wonCount}</td>
                           </tr>
                         );
-                      }
-                      return (
-                        <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
-                          <td>{ownerDepartmentMap[row.key] || '미지정'}</td>
-                          <td>{row.key}</td>
-                          <td>{formatAmount(row.wonAmount)}</td>
-                          <td>{formatAmount(Math.round(row.weightedAmount))}</td>
-                          <td>{row.leadCount}</td>
-                          <td>{row.dealCount}</td>
-                          <td>{row.wonCount}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
             <div className="dashboard__section">
-              <div className="dashboard__section-title">진행중인 딜</div>
+              <div className="dashboard__section-header">
+                <div className="dashboard__section-title">진행중인 딜</div>
+                <div className="dashboard__section-spacer" />
+              </div>
               <div className="dashboard__table dashboard__table--scroll">
                 <div className="table__wrapper">
                   <table className="data-table">
@@ -1812,6 +1936,99 @@ function DashboardPage() {
           </div>
         </div>
       )}
+
+      {isGoalModalOpen && (
+        <div className="modal">
+          <div className="modal__overlay" onClick={() => setIsGoalModalOpen(false)} />
+          <div className="modal__content modal__content--white goal-modal" role="dialog" aria-modal="true">
+            <div className="modal__header goal-modal__header">
+              <div className="goal-modal__tabs" data-active-index={goalTab === 'month' ? '1' : '0'}>
+                <button
+                  type="button"
+                  className={`goal-modal__tab${goalTab === 'year' ? ' goal-modal__tab--active' : ''}`}
+                  onClick={() => setGoalTab('year')}
+                >
+                  연도별
+                </button>
+                <button
+                  type="button"
+                  className={`goal-modal__tab${goalTab === 'month' ? ' goal-modal__tab--active' : ''}`}
+                  onClick={() => setGoalTab('month')}
+                >
+                  월별
+                </button>
+              </div>
+              <button type="button" className="goal-modal__submit" onClick={openGoalDraft}>
+                등록
+              </button>
+              <button className="icon-button" type="button" onClick={() => setIsGoalModalOpen(false)} aria-label="닫기">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
+                  <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal__body">
+              <div className="goal-modal__list">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>기간</th>
+                      <th>목표금액(원)</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {goalDraft && (
+                      <tr className="data-table__row">
+                        <td>
+                          <input
+                            className="goal-modal__input"
+                            type="text"
+                            value={goalDraft.period}
+                            onChange={handleGoalDraftChange('period')}
+                            placeholder={goalTab === 'year' ? 'YYYY' : 'YYYY-MM'}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="goal-modal__input"
+                            type="text"
+                            value={goalDraft.amount}
+                            onChange={handleGoalDraftChange('amount')}
+                            placeholder="금액"
+                          />
+                        </td>
+                        <td className="goal-modal__actions">
+                          <button type="button" className="goal-modal__action" onClick={saveGoalDraft}>
+                            등록
+                          </button>
+                          <button type="button" className="goal-modal__action goal-modal__action--ghost" onClick={() => setGoalDraft(null)}>
+                            취소
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+                    {goalRows.length === 0 && (
+                      <tr className="data-table__row data-table__row--empty">
+                        <td colSpan={3} className="data-table__empty">데이터가 없습니다.</td>
+                      </tr>
+                    )}
+                    {goalRows.map((goal) => (
+                      <tr key={goal.id} className="data-table__row">
+                        <td>{formatGoalPeriod(goal)}</td>
+                        <td>{formatAmount(goal.amount)}</td>
+                        <td />
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isDealModalOpen && editingDeal && (
         <div className="modal">
           <div className="modal__overlay" onClick={() => setIsDealModalOpen(false)} />

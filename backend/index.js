@@ -1702,6 +1702,51 @@ async function deleteLead(req, res) {
   }
 }
 
+async function getGoals(req, res) {
+  let connection;
+  try {
+    connection = await mysql.createConnection(dbConfig);
+    const [rows] = await connection.query(
+      'SELECT id, period_type, period_start, amount, created_at, updated_at FROM `goals` ORDER BY period_start DESC'
+    );
+    res.json({ goals: rows });
+  } catch (error) {
+    console.error('Failed to fetch goals:', error);
+    res.status(500).json({ error: 'Failed to fetch goals' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+async function upsertGoal(req, res) {
+  let connection;
+  try {
+    const { period_type, period_start, amount } = req.body || {};
+    if (!period_type || !period_start) {
+      res.status(400).json({ error: 'Missing period_type or period_start' });
+      return;
+    }
+    const normalizedAmount = normalizeNumberValue(amount);
+    connection = await mysql.createConnection(dbConfig);
+    await connection.query(
+      `INSERT INTO \`goals\` (period_type, period_start, amount)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE amount = VALUES(amount), updated_at = NOW()`,
+      [period_type, normalizeDateValue(period_start), normalizedAmount ?? 0]
+    );
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Failed to upsert goal:', error);
+    res.status(500).json({ error: 'Failed to save goal' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
@@ -1747,6 +1792,8 @@ app.post('/api/lookup-values', createLookupValue);
 app.put('/api/lookup-values/:id', updateLookupValue);
 app.delete('/api/lookup-values/:id', deleteLookupValue);
 app.get('/api/activity-logs', getActivityLogs);
+app.get('/api/goals', getGoals);
+app.post('/api/goals', upsertGoal);
 app.get('/api/deals', getDeals);
 app.post('/api/deals', createDeal);
 app.put('/api/deals/:id', updateDeal);
