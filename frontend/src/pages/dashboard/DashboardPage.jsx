@@ -43,6 +43,7 @@ function DashboardPage() {
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [confirmState, setConfirmState] = useState({ open: false, message: '', onConfirm: null });
   const [periodMode, setPeriodMode] = useState('year');
+  const [summaryPeriodMode, setSummaryPeriodMode] = useState('year');
   const [groupMode, setGroupMode] = useState('department');
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [summaryDepartment, setSummaryDepartment] = useState('');
@@ -784,6 +785,35 @@ function DashboardPage() {
     };
   }, [leads, deals, periodMode, groupMode, ownerDepartmentMap]);
 
+  const summaryRows = useMemo(() => {
+    return groupedSummary.categories
+      .map((key, index) => {
+        const leadCount = groupedSummary.series[0]?.data[index] ?? 0;
+        const dealCount = groupedSummary.series[1]?.data[index] ?? 0;
+        const wonCount = groupedSummary.series[2]?.data[index] ?? 0;
+        const amounts =
+          groupMode === 'department'
+            ? ownerSummary.filter((row) => (ownerDepartmentMap[row.owner] || '미지정') === key)
+            : ownerSummary.filter((row) => row.owner === key);
+        const wonAmount = amounts.reduce((sum, row) => sum + row.wonAmount, 0);
+        const weightedAmount = amounts.reduce((sum, row) => sum + row.weightedAmount, 0);
+        return {
+          key,
+          leadCount,
+          dealCount,
+          wonCount,
+          wonAmount,
+          weightedAmount
+        };
+      })
+      .sort((a, b) => {
+        if (b.wonAmount !== a.wonAmount) {
+          return b.wonAmount - a.wonAmount;
+        }
+        return b.weightedAmount - a.weightedAmount;
+      });
+  }, [groupedSummary, groupMode, ownerSummary, ownerDepartmentMap]);
+
   const buildOverviewStats = (dealList) => {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -917,7 +947,7 @@ function DashboardPage() {
       setSummaryOwner('');
     } else {
       setSummaryOwner(key);
-      setSummaryDepartment(ownerDepartmentMap[key] || '');
+      setSummaryDepartment('');
     }
     setIsSummaryModalOpen(true);
   };
@@ -1050,8 +1080,8 @@ function DashboardPage() {
     [summaryOverviewStats, summaryConversion]
   );
   const summaryMonthlyData = useMemo(
-    () => buildMonthlyData(summaryDeals, periodMode === 'year' ? 'year' : 'month'),
-    [summaryDeals, periodMode]
+    () => buildMonthlyData(summaryDeals, summaryPeriodMode === 'year' ? 'year' : 'month'),
+    [summaryDeals, summaryPeriodMode]
   );
   const summaryMonthlySeries = [
     { name: '목표', data: summaryMonthlyData.map((item) => item.goal) },
@@ -1397,22 +1427,22 @@ function DashboardPage() {
             <div className="dashboard__section-header">
               <div className="dashboard__section-title">수주액</div>
               <div className="dashboard__period">
-                <div className="dashboard__period-toggle" data-active-index={periodMode === 'month' ? '1' : '0'}>
-                  <button
-                    type="button"
-                    className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
-                    onClick={() => setPeriodMode('year')}
-                  >
-                    연도별
-                  </button>
-                  <button
-                    type="button"
-                    className={`dashboard__period-btn${periodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
-                    onClick={() => setPeriodMode('month')}
-                  >
-                    월별
-                  </button>
-                </div>
+                  <div className="dashboard__period-toggle" data-active-index={summaryPeriodMode === 'month' ? '1' : '0'}>
+                    <button
+                      type="button"
+                      className={`dashboard__period-btn${summaryPeriodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
+                      onClick={() => setSummaryPeriodMode('year')}
+                    >
+                      연도별
+                    </button>
+                    <button
+                      type="button"
+                      className={`dashboard__period-btn${summaryPeriodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
+                      onClick={() => setSummaryPeriodMode('month')}
+                    >
+                      월별
+                    </button>
+                  </div>
               </div>
             </div>
             <div className="dashboard__chart">
@@ -1498,29 +1528,20 @@ function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {groupedSummary.categories.length === 0 && (
+                    {summaryRows.length === 0 && (
                       <tr className="data-table__row data-table__row--empty">
                         <td colSpan={6} className="data-table__empty">데이터가 없습니다.</td>
                       </tr>
                     )}
-                    {groupedSummary.categories.map((key, index) => {
-                      const leadCount = groupedSummary.series[0]?.data[index] ?? 0;
-                      const dealCount = groupedSummary.series[1]?.data[index] ?? 0;
-                      const wonCount = groupedSummary.series[2]?.data[index] ?? 0;
-                      const amounts =
-                        groupMode === 'department'
-                          ? ownerSummary.filter((row) => (ownerDepartmentMap[row.owner] || '미지정') === key)
-                          : ownerSummary.filter((row) => row.owner === key);
-                      const wonAmount = amounts.reduce((sum, row) => sum + row.wonAmount, 0);
-                      const weightedAmount = amounts.reduce((sum, row) => sum + row.weightedAmount, 0);
+                    {summaryRows.map((row) => {
                       return (
-                        <tr key={key} className="data-table__row" onClick={() => openSummaryModal(key)}>
-                          <td>{key}</td>
-                          <td>{formatAmount(wonAmount)}</td>
-                          <td>{formatAmount(Math.round(weightedAmount))}</td>
-                          <td>{leadCount}</td>
-                          <td>{dealCount}</td>
-                          <td>{wonCount}</td>
+                        <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
+                          <td>{row.key}</td>
+                          <td>{formatAmount(row.wonAmount)}</td>
+                          <td>{formatAmount(Math.round(row.weightedAmount))}</td>
+                          <td>{row.leadCount}</td>
+                          <td>{row.dealCount}</td>
+                          <td>{row.wonCount}</td>
                         </tr>
                       );
                     })}
@@ -1646,47 +1667,52 @@ function DashboardPage() {
                     ))}
                   </div>
                 </div>
-                <div className="dashboard-summary-modal__row">
-                  <div className="dashboard__section">
-                    <div className="dashboard__section-header">
-                      <div className="dashboard__section-title">수주액</div>
-                      <div className="dashboard__period-toggle" data-active-index={periodMode === 'month' ? '1' : '0'}>
-                        <button
-                          type="button"
-                          className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
-                          onClick={() => setPeriodMode('year')}
-                        >
-                          연도별
-                        </button>
-                        <button
-                          type="button"
-                          className={`dashboard__period-btn${periodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
-                          onClick={() => setPeriodMode('month')}
-                        >
-                          월별
-                        </button>
-                      </div>
-                    </div>
-                    <div className="dashboard__chart">
-                      <div className="dashboard__chart-canvas">
-                        {summaryMonthlyData.length === 0 ? (
-                          <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                        ) : (
-                          <ReactApexChart options={summaryMonthlyOptions} series={summaryMonthlySeries} type="line" height={220} />
-                        )}
-                      </div>
+                <div className="dashboard-summary-modal__charts">
+                  <div className="dashboard-summary-modal__charts-header">
+                    <div />
+                    <div className="dashboard__period-toggle" data-active-index={periodMode === 'month' ? '1' : '0'}>
+                      <button
+                        type="button"
+                        className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
+                        onClick={() => setPeriodMode('year')}
+                      >
+                        연도별
+                      </button>
+                      <button
+                        type="button"
+                        className={`dashboard__period-btn${periodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
+                        onClick={() => setPeriodMode('month')}
+                      >
+                        월별
+                      </button>
                     </div>
                   </div>
-                  <div className="dashboard__section">
-                    <div className="dashboard__section-title">상태별 건수</div>
-                    <div className="dashboard__pipeline-stats-wrapper">
-                      <div className="dashboard__pipeline-stats">
-                        <div className="dashboard__pipeline-stats-chart">
-                          {summaryStatusTrend.categories.length === 0 ? (
+                  <div className="dashboard-summary-modal__row">
+                    <div className="dashboard__section">
+                      <div className="dashboard__section-header">
+                        <div className="dashboard__section-title">수주액</div>
+                      </div>
+                      <div className="dashboard__chart">
+                        <div className="dashboard__chart-canvas">
+                          {summaryMonthlyData.length === 0 ? (
                             <p className="table__status table__status--centered">데이터가 없습니다.</p>
                           ) : (
-                            <ReactApexChart options={summaryStatusOptions} series={summaryStatusTrend.series} type="bar" height={220} />
+                            <ReactApexChart options={summaryMonthlyOptions} series={summaryMonthlySeries} type="line" height={220} />
                           )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="dashboard__section">
+                      <div className="dashboard__section-title">상태별 건수</div>
+                      <div className="dashboard__pipeline-stats-wrapper">
+                        <div className="dashboard__pipeline-stats">
+                          <div className="dashboard__pipeline-stats-chart">
+                            {summaryStatusTrend.categories.length === 0 ? (
+                              <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                            ) : (
+                              <ReactApexChart options={summaryStatusOptions} series={summaryStatusTrend.series} type="bar" height={220} />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -48,12 +48,43 @@ function ActivitiesPage() {
     if (!value) {
       return;
     }
+    const text = String(value);
+    const tryLegacyCopy = () => {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', 'true');
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-9999px';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        const success = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return success;
+      } catch (error) {
+        return false;
+      }
+    };
     try {
-      await navigator.clipboard.writeText(String(value));
-      showToast('복사되었습니다.');
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        showToast('복사되었습니다.');
+        return;
+      }
+      if (tryLegacyCopy()) {
+        showToast('복사되었습니다.');
+      } else {
+        showToast('복사에 실패했습니다.');
+      }
     } catch (error) {
-      console.error(error);
-      showToast('복사에 실패했습니다.');
+      if (tryLegacyCopy()) {
+        showToast('복사되었습니다.');
+      } else {
+        console.error(error);
+        showToast('복사에 실패했습니다.');
+      }
     }
   };
 

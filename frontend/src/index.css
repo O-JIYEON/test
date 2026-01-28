@@ -1817,7 +1817,7 @@ html[data-theme='dark'] .dashboard__overview-card--hero + .dashboard__overview-c
   flex-direction: column;
   gap: 16px;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.6);
+  background: #f5f7fb;
   border: none;
   border-radius: 0 0 0 12px;
   padding: 24px;
@@ -1911,6 +1911,13 @@ html[data-theme='dark'] .dashboard__overview-card--hero + .dashboard__overview-c
   gap: 8px;
 }
 
+.dashboard-summary-modal__charts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
 .dashboard-summary-modal__upcoming-grid {
   display: grid;
   grid-template-columns: 3fr 1fr;
@@ -1998,6 +2005,10 @@ html[data-theme='dark'] .dashboard-summary-modal__loss--card {
   color: #0f172a;
 }
 
+html[data-theme='dark'] .dashboard-summary-modal__loss-reason {
+  color: #e2e8f0;
+}
+
 .dashboard-summary-modal__loss-percent {
   font-size: 0.95rem;
   color: inherit;
@@ -2030,7 +2041,7 @@ html[data-theme='light'] .dashboard-summary-modal__panel {
 }
 
 html[data-theme='light'] .dashboard-summary-modal__left {
-  background: #f1f5f9;
+  background: #f5f7fb;
 }
 
 html[data-theme='dark'] .dashboard-summary-modal__left {

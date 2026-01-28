@@ -72,7 +72,6 @@ const defaultProbabilityByStage = {
 const lossReasonOptions = ['가격', '경쟁사', '일정', '기술부적합', '예산 없음', '내부우선순위 변경', '기타'];
 
 const dealColumns = [
-  { key: 'lead_code', label: 'Lead Id' },
   { key: 'deal_code', label: 'Deal Id' },
   { key: 'created_at', label: '생성일' },
   { key: 'company', label: '회사명' },
@@ -238,8 +237,8 @@ function DealsPage() {
 
   const dealFields = useMemo(
     () => [
-      { name: 'lead_id', label: 'Lead Id', type: 'select' },
-      { name: 'project_name', label: '프로젝트/건명', type: 'text' },
+  { name: 'lead_id', label: 'Lead Id', type: 'select' },
+  { name: 'project_name', label: '프로젝트/건명', type: 'text' },
       { name: 'stage', label: '딜단계', type: 'select', options: stageOptions },
       { name: 'expected_amount', label: '예상금액(원)', type: 'number' },
       { name: 'expected_close_date', label: '예상수주일', type: 'date' },
