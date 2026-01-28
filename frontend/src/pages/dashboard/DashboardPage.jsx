@@ -1519,23 +1519,50 @@ function DashboardPage() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>{groupMode === 'department' ? '부서' : '담당자'}</th>
-                      <th>수주매출</th>
-                      <th>가중금액</th>
-                      <th>유입리드수</th>
-                      <th>딜수</th>
-                      <th>수주건수</th>
+                      {groupMode === 'department' ? (
+                        <>
+                          <th>부서</th>
+                          <th>수주매출</th>
+                          <th>가중금액</th>
+                          <th>리드수</th>
+                          <th>딜수</th>
+                          <th>수주수</th>
+                        </>
+                      ) : (
+                        <>
+                          <th>부서</th>
+                          <th>담당자</th>
+                          <th>수주매출</th>
+                          <th>가중금액</th>
+                          <th>리드수</th>
+                          <th>딜수</th>
+                          <th>수주수</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {summaryRows.length === 0 && (
                       <tr className="data-table__row data-table__row--empty">
-                        <td colSpan={6} className="data-table__empty">데이터가 없습니다.</td>
+                        <td colSpan={groupMode === 'department' ? 6 : 7} className="data-table__empty">데이터가 없습니다.</td>
                       </tr>
                     )}
                     {summaryRows.map((row) => {
+                      if (groupMode === 'department') {
+                        return (
+                          <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
+                            <td>{row.key}</td>
+                            <td>{formatAmount(row.wonAmount)}</td>
+                            <td>{formatAmount(Math.round(row.weightedAmount))}</td>
+                            <td>{row.leadCount}</td>
+                            <td>{row.dealCount}</td>
+                            <td>{row.wonCount}</td>
+                          </tr>
+                        );
+                      }
                       return (
                         <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
+                          <td>{ownerDepartmentMap[row.key] || '미지정'}</td>
                           <td>{row.key}</td>
                           <td>{formatAmount(row.wonAmount)}</td>
                           <td>{formatAmount(Math.round(row.weightedAmount))}</td>

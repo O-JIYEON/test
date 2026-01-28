@@ -237,12 +237,12 @@ function DealsPage() {
 
   const dealFields = useMemo(
     () => [
-  { name: 'lead_id', label: 'Lead Id', type: 'select' },
-  { name: 'project_name', label: '프로젝트/건명', type: 'text' },
+      { name: 'lead_id', label: 'Lead Id', type: 'select' },
+      { name: 'project_name', label: '프로젝트/건명', type: 'text' },
       { name: 'stage', label: '딜단계', type: 'select', options: stageOptions },
+      { name: 'won_date', label: '수주확정일', type: 'date' },
       { name: 'expected_amount', label: '예상금액(원)', type: 'number' },
       { name: 'expected_close_date', label: '예상수주일', type: 'date' },
-      { name: 'won_date', label: '수주확정일', type: 'date' },
       { name: 'next_action_date', label: '다음액션일', type: 'date' },
       { name: 'next_action_content', label: '다음액션내용', type: 'textarea' },
       { name: 'loss_reason', label: '실주사유', type: 'select', options: lossReasonOptions }
@@ -705,11 +705,7 @@ function DealsPage() {
               </label>
             </div>
           </form>
-          <div className="filter-row__actions">
-            <button className="project-form__submit" type="button" onClick={openCreateModal}>
-              등록
-            </button>
-          </div>
+          <div className="filter-row__actions" />
         </div>
         <div className="content__card content__card--wide">
           {status === 'loading' && <p className="table__status">불러오는 중...</p>}
@@ -947,6 +943,9 @@ function DealsPage() {
                     ) {
                       return null;
                     }
+                  }
+                  if (field.name === 'won_date' && stageValue !== '수주') {
+                    return null;
                   }
                   if (editingId && stageValue && stageValue !== '실주' && field.name === 'loss_reason') {
                     return null;
