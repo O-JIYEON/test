@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import dayjs from 'dayjs';
 
 const API_BASE = `http://${window.location.hostname}:5001`;
 
@@ -74,6 +75,14 @@ const formatDate = (value) => {
     return text.slice(0, 10);
   }
   return text.length >= 10 ? text.slice(0, 10) : text;
+};
+
+const formatDateTime = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  return dayjs(value).format('YYYY-MM-DD HH:mm');
 };
 
 const formatLeadId = (lead) => {
@@ -825,7 +834,7 @@ function LeadsPage() {
                         if (column.key === 'created_at') {
                           return (
                             <td key={column.key} className={cellClassName}>
-                              {formatDate(lead.created_at)}
+                              {formatDateTime(lead.created_at)}
                             </td>
                           );
                         }

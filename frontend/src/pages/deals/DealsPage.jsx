@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import dayjs from 'dayjs';
 
 const API_BASE = `http://${window.location.hostname}:5001`;
 
@@ -103,6 +104,14 @@ const formatDate = (value) => {
     return text.slice(0, 10);
   }
   return text.length >= 10 ? text.slice(0, 10) : text;
+};
+
+const formatDateTime = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  return dayjs(value).format('YYYY-MM-DD HH:mm');
 };
 
 const formatAmount = (value) => {
@@ -779,7 +788,16 @@ function DealsPage() {
                           );
                         }
                         if (
-                          column.key === 'created_at' ||
+                          column.key === 'created_at'
+) {
+                          return (
+                            <td key={column.key} className={cellClassName}>
+                              {formatDateTime(deal[column.key])}
+                            </td>
+                          );
+                        }
+
+                        if (
                           column.key === 'expected_close_date' ||
                           column.key === 'won_date'
                         ) {

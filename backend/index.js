@@ -1573,18 +1573,16 @@ async function createLead(req, res) {
       result.insertId
     ]);
     const leadRow = leadRows[0];
-    const seq = await getNextDailySequence(
-      connection,
-      'lead',
-      'lead_code',
-      '-L',
-      leadRow?.created_at || new Date()
-    );
+    const baseCreatedAt = leadRow?.created_at || new Date();
+    const createdDate = new Date(baseCreatedAt);
+    const kstDate = new Date(createdDate.getTime() + 9 * 60 * 60 * 1000);
+    const kstDateKey = kstDate.toISOString().slice(0, 10).replace(/-/g, '');
+    const seq = await getNextDailySequence(connection, 'lead', 'lead_code', '-L', kstDate);
     await connection.query(
       `UPDATE \`lead\`
-       SET lead_code = CONCAT(DATE_FORMAT(created_at, '%Y%m%d'), '-L', ?)
+       SET lead_code = CONCAT(?, '-L', ?)
        WHERE id = ?`,
-      [seq, result.insertId]
+      [kstDateKey, seq, result.insertId]
     );
     const leadLogPayload = await getLeadLogPayload(connection, result.insertId);
     if (leadLogPayload) {

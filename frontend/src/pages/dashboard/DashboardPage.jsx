@@ -1011,6 +1011,11 @@ function DashboardPage() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3);
   }, [summaryDeals]);
+  const summaryLossTotal = useMemo(
+    () =>
+      summaryDeals.reduce((acc, deal) => (getStatus(deal) === '실주' ? acc + 1 : acc), 0),
+    [summaryDeals]
+  );
 
   const summaryUpcomingDeals = useMemo(() => {
     const today = new Date();
@@ -1022,6 +1027,7 @@ function DashboardPage() {
       return Math.ceil((date.getTime() - base.getTime()) / (1000 * 60 * 60 * 24));
     };
     return summaryDeals
+      .filter((deal) => !['수주', '실주'].includes(getStatus(deal)))
       .map((deal) => ({ ...deal, dday: toDays(deal.next_action_date) }))
       .filter((deal) => deal.dday !== null)
       .sort((a, b) => a.dday - b.dday)
@@ -1029,6 +1035,20 @@ function DashboardPage() {
   }, [summaryDeals]);
 
   const summaryOverviewStats = useMemo(() => buildOverviewStats(summaryDeals), [summaryDeals]);
+  const summaryTopCards = useMemo(
+    () => [
+      ...summaryOverviewStats,
+      {
+        label: '리드 → 딜',
+        value: summaryConversion.leadToDeal === null ? '-' : `${summaryConversion.leadToDeal.toFixed(1)}%`
+      },
+      {
+        label: '딜 → 수주',
+        value: summaryConversion.dealToWon === null ? '0.0%' : `${summaryConversion.dealToWon.toFixed(1)}%`
+      }
+    ],
+    [summaryOverviewStats, summaryConversion]
+  );
   const summaryMonthlyData = useMemo(
     () => buildMonthlyData(summaryDeals, periodMode === 'year' ? 'year' : 'month'),
     [summaryDeals, periodMode]
@@ -1607,8 +1627,8 @@ function DashboardPage() {
               </div>
               <div className="dashboard-summary-modal__right">
                 <div className="dashboard__overview dashboard__overview--compact">
-                  <div className="dashboard__overview-cards">
-                    {summaryOverviewStats.map((item) => (
+                  <div className="dashboard__overview-cards dashboard__overview-cards--summary">
+                    {summaryTopCards.map((item) => (
                       <div className="dashboard__overview-card" key={item.label}>
                         <span>{item.label}</span>
                         <strong>
@@ -1624,24 +1644,6 @@ function DashboardPage() {
                         </strong>
                       </div>
                     ))}
-                  </div>
-                </div>
-                <div className="dashboard-summary-modal__metrics">
-                  <div className="dashboard-summary-modal__metric">
-                    <span>리드 → 딜 전환율</span>
-                    <strong>
-                      {summaryConversion.leadToDeal === null ? '-' : `${summaryConversion.leadToDeal.toFixed(1)}%`}
-                    </strong>
-                  </div>
-                  <div className="dashboard-summary-modal__metric">
-                    <span>딜 → 수주 전환율</span>
-                    <strong>
-                      {summaryConversion.dealToWon === null ? '-' : `${summaryConversion.dealToWon.toFixed(1)}%`}
-                    </strong>
-                  </div>
-                  <div className="dashboard-summary-modal__metric">
-                    <span>평균 리드 전환일</span>
-                    <strong>{summaryConversion.avgLeadDays === null ? '-' : `${summaryConversion.avgLeadDays}일`}</strong>
                   </div>
                 </div>
                 <div className="dashboard-summary-modal__row">
@@ -1690,50 +1692,65 @@ function DashboardPage() {
                     </div>
                   </div>
                 </div>
-                <div className="dashboard-summary-modal__loss">
-                  <div className="dashboard__section-title">실주 사유 Top 3</div>
-                  {summaryLossReasons.length === 0 ? (
-                    <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                  ) : (
-                    <div className="dashboard-summary-modal__loss-list">
-                      {summaryLossReasons.map(([reason, count]) => (
-                        <div className="dashboard-summary-modal__loss-item" key={reason}>
-                          <span>{reason}</span>
-                          <strong>{count}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="dashboard-summary-modal__upcoming">
-                  <div className="dashboard__section-title">다음액션 임박 딜</div>
-                  <div className="dashboard__table">
-                    <table className="data-table">
-                      <thead>
+                <div className={`dashboard-summary-modal__upcoming-grid${summaryLossReasons.length === 0 ? ' dashboard-summary-modal__upcoming-grid--full' : ''}`}>
+                  <div className="dashboard-summary-modal__upcoming">
+                    <div className="dashboard__section-title">다음액션 임박 딜</div>
+                    <div className="dashboard__table">
+                      <table className="data-table">
+                        <thead>
                         <tr>
                           <th>Deal ID</th>
                           <th>회사명</th>
+                          <th>담당자(영업)</th>
+                          <th>다음액션내용</th>
                           <th>다음액션일</th>
-                          <th>D-day</th>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {summaryUpcomingDeals.length === 0 && (
+                        </thead>
+                        <tbody>
+                          {summaryUpcomingDeals.length === 0 && (
                           <tr className="data-table__row data-table__row--empty">
-                            <td colSpan={4} className="data-table__empty">데이터가 없습니다.</td>
+                            <td colSpan={5} className="data-table__empty">데이터가 없습니다.</td>
                           </tr>
-                        )}
-                        {summaryUpcomingDeals.map((deal) => (
-                          <tr key={deal.id} className="data-table__row">
+                          )}
+                          {summaryUpcomingDeals.map((deal) => (
+                            <tr key={deal.id} className="data-table__row">
                             <td>{deal.deal_code || deal.id}</td>
                             <td>{deal.company || '-'}</td>
-                            <td>{formatDate(deal.next_action_date) || '-'}</td>
-                            <td>{deal.dday === 0 ? 'D-day' : deal.dday > 0 ? `D-${deal.dday}` : `D+${Math.abs(deal.dday)}`}</td>
+                            <td>{deal.customer_owner || '-'}</td>
+                            <td>{deal.next_action_content || '-'}</td>
+                            <td>
+                              {formatDate(deal.next_action_date) || '-'}
+                              {deal.dday !== null && (
+                                <span className="dashboard-summary-modal__upcoming-dday">
+                                  {deal.dday === 0 ? ' (D-0)' : deal.dday > 0 ? ` (D-${deal.dday})` : ` (D+${Math.abs(deal.dday)})`}
+                                </span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                </div>
+                {summaryLossReasons.length > 0 && (
+                  <div className="dashboard-summary-modal__loss">
+                    <div className="dashboard__section-title">실주 사유 Top 3</div>
+                    <div className="dashboard-summary-modal__loss--card">
+                      <div className="dashboard-summary-modal__loss-list">
+                        {summaryLossReasons.map(([reason, count], index) => {
+                          const percent = summaryLossTotal === 0 ? 0 : (count / summaryLossTotal) * 100;
+                          return (
+                            <div className="dashboard-summary-modal__loss-item" key={reason}>
+                              <span className="dashboard-summary-modal__loss-rank">{index + 1}</span>
+                              <span className="dashboard-summary-modal__loss-reason">{reason}</span>
+                              <strong className="dashboard-summary-modal__loss-percent">{percent.toFixed(1)}%</strong>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 </div>
               </div>
             </div>

@@ -1346,7 +1346,7 @@ html[data-theme='dark'] .lead-info__value {
 }
 
 .data-table__row:hover td {
-  background: rgba(109, 40, 217, 0.16);
+  background: rgba(59, 130, 246, 0.18);
 }
 
 .data-table__row--active td {
@@ -1501,6 +1501,50 @@ html[data-theme='dark'] .dashboard__period-btn--active {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+}
+
+.dashboard__overview-cards--summary {
+  grid-template-columns: 2fr 2fr 2fr 1fr 1fr;
+  gap: 0;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.16);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard__overview-cards--summary .dashboard__overview-card {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-height: 80px;
+  padding: 16px 24px;
+  position: relative;
+}
+
+.dashboard__overview-cards--summary .dashboard__overview-card strong {
+  margin-top: 4px;
+  font-size: 1.2rem;
+}
+
+.dashboard__overview-cards--summary .dashboard__overview-card + .dashboard__overview-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 1px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+html[data-theme='light'] .dashboard__overview-cards--summary {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 12px 24px rgba(148, 163, 184, 0.18);
+}
+
+html[data-theme='light'] .dashboard__overview-cards--summary .dashboard__overview-card + .dashboard__overview-card::before {
+  background: #e2e8f0;
 }
 
 .dashboard__overview-card {
@@ -1867,22 +1911,102 @@ html[data-theme='dark'] .dashboard__overview-card--hero + .dashboard__overview-c
   gap: 8px;
 }
 
+.dashboard-summary-modal__upcoming-grid {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 0;
+}
+
+.dashboard-summary-modal__upcoming-grid--full {
+  grid-template-columns: 1fr;
+}
+
+.dashboard-summary-modal__upcoming td:last-child {
+  white-space: nowrap;
+}
+
+.dashboard-summary-modal__upcoming {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-summary-modal__upcoming-dday {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.dashboard-summary-modal__loss--card {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+  height: 100%;
+}
+
+html[data-theme='light'] .dashboard-summary-modal__loss--card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 12px 24px rgba(148, 163, 184, 0.18);
+}
+
+html[data-theme='dark'] .dashboard-summary-modal__loss--card {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
 .dashboard-summary-modal__loss-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
+  height: 100%;
 }
 
 .dashboard-summary-modal__loss-item {
-  background: rgba(15, 23, 42, 0.08);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: transparent;
+  border: none;
   border-radius: 12px;
   padding: 10px 12px;
   display: flex;
-  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
   align-items: center;
   font-size: 0.9rem;
   color: var(--muted-text, #64748b);
+}
+
+.dashboard-summary-modal__loss-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.dashboard-summary-modal__loss-reason {
+  flex: 1;
+  min-width: 0;
+  color: #0f172a;
+}
+
+.dashboard-summary-modal__loss-percent {
+  font-size: 0.95rem;
+  color: inherit;
+  font-weight: 700;
+}
+
+html[data-theme='dark'] .dashboard-summary-modal__loss-rank {
+  background: #2563eb;
+  color: #ffffff;
 }
 
 html[data-theme='light'] .dashboard-summary-modal__metric,
@@ -3388,7 +3512,7 @@ html[data-theme='light'] .timeline__bar-dday {
 }
 
 html[data-theme='light'] .data-table__row:hover td {
-  background: rgba(109, 40, 217, 0.12);
+  background: rgba(59, 130, 246, 0.16);
 }
 
 html[data-theme='light'] .data-table__row--active td {
