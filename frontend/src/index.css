@@ -103,8 +103,32 @@ ul {
   stroke-linejoin: round;
 }
 
-.sidebar__link--active .sidebar__icon svg {
-  stroke: currentColor;
+.sidebar__icon img {
+  width: 20px;
+  height: 20px;
+  display: block;
+  filter: grayscale(1) brightness(0.55) saturate(0);
+  transition: filter 0.2s ease;
+}
+
+.sidebar__link--active .sidebar__icon img {
+  filter: brightness(0) saturate(100%) invert(22%) sepia(78%) saturate(2756%) hue-rotate(214deg) brightness(96%) contrast(93%);
+}
+
+.sidebar__link:hover .sidebar__icon img {
+  filter: brightness(0) saturate(100%) invert(22%) sepia(78%) saturate(2756%) hue-rotate(214deg) brightness(96%) contrast(93%);
+}
+
+html[data-theme='dark'] .sidebar__icon img {
+  filter: brightness(0) saturate(100%) invert(90%) sepia(6%) saturate(1040%) hue-rotate(184deg) brightness(102%) contrast(96%);
+}
+
+html[data-theme='dark'] .sidebar__link--active .sidebar__icon img {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(42%) saturate(3537%) hue-rotate(186deg) brightness(101%) contrast(96%);
+}
+
+html[data-theme='dark'] .sidebar__link:hover .sidebar__icon img {
+  filter: brightness(0) saturate(100%) invert(68%) sepia(42%) saturate(3537%) hue-rotate(186deg) brightness(101%) contrast(96%);
 }
 
 .sidebar__link:hover {
