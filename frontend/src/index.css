@@ -2176,34 +2176,18 @@ html[data-theme='dark'] .dashboard__pipeline-chart .apexcharts-data-labels text 
 }
 
 .dashboard__table--scroll {
-  max-height: none;
-  overflow: visible;
+  max-height: 300px;
+  overflow-y: auto;
   padding: 16px;
 }
 
 .dashboard__table--scroll .table__wrapper {
   max-height: 268px;
   overflow-y: auto;
-  margin-top: 0;
 }
 
 .dashboard__table--scroll .table__wrapper table {
   margin-bottom: 0;
-}
-
-.dashboard__table--scroll .table__wrapper thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: inherit;
-}
-
-html[data-theme='light'] .dashboard__table--scroll .table__wrapper thead th {
-  background: #ffffff;
-}
-
-html[data-theme='dark'] .dashboard__table--scroll .table__wrapper thead th {
-  background: #0f1b2d;
 }
 
 .dashboard__table-title {

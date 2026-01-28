@@ -11,7 +11,6 @@ import ProjectsPage from './pages/projects/ProjectsPage';
 import CustomersPage from './pages/customers/CustomersPage';
 import UsersPage from './pages/users/UsersPage';
 import SettingsPage from './pages/settings/SettingsPage';
-import Customers2Page from './pages/customers2/Customers2Page';
 import Sidebar from './components/Sidebar';
 import TopHeader from './components/TopHeader';
 
@@ -46,9 +45,6 @@ function App() {
             }
             if (item.path === '/customers') {
               return <Route key={item.path} path={item.path} element={<CustomersPage />} />;
-            }
-            if (item.path === '/customers-2') {
-              return <Route key={item.path} path={item.path} element={<Customers2Page />} />;
             }
             if (item.path === '/deals') {
               return <Route key={item.path} path={item.path} element={<DealsPage />} />;

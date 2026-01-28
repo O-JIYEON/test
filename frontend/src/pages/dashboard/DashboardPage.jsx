@@ -1318,7 +1318,8 @@ function DashboardPage() {
     },
     yaxis: {
       labels: {
-        show: false
+        show: true,
+        style: { colors: theme === 'dark' ? '#e2e8f0' : '#64748b' }
       }
     },
     grid: {

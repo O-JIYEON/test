@@ -3,7 +3,6 @@ const menuItems = [
   { label: '프로젝트 관리', path: '/projects', hidden: true },
   { label: '사용자', path: '/period-1', hidden: true },
   { label: '고객사', path: '/customers', hidden: false },
-  { label: '고객사2', path: '/customers-2', hidden: true},
   { label: '리드', path: '/leads' },
   { label: '딜(기회)', path: '/deals' },
   { label: '활동기록', path: '/activities' },
