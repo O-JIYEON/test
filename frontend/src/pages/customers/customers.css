@@ -1,0 +1,19 @@
+/* Page styles for CustomersPage */
+.content__card-header--between .project-form__field.contact-search--wide {
+  width: 300px;
+}
+
+.contact-search--wide {
+  width: 400px;
+  min-width: 0;
+}
+
+.contact-search--wide input {
+  width: 100%;
+}
+
+@media (max-width: 2000px) {
+  .customer-table__hide {
+    display: none;
+  }
+}

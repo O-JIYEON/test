@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import '../../components/dialogs/modal.css';
 import {
   fetchDeals,
   createDeal,
@@ -13,6 +14,8 @@ import { fetchLookupValues } from '../../api/lookup.api';
 import Pagination from '../../components/common/Pagination';
 import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
+import './deals.css';
+import './dealModal.css';
 import dayjs, {
   formatDate as formatDateValue,
   formatDateTime as formatDateTimeValue,

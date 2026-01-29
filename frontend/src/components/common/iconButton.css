@@ -1,0 +1,32 @@
+.icon-button {
+  border: none;
+  background: #1f2937;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.icon-button:hover {
+  background: #334155;
+  transform: translateY(-1px);
+}
+
+.icon-button--danger {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
+}
+
+.icon-button--danger:hover {
+  background: rgba(248, 113, 113, 0.35);
+}

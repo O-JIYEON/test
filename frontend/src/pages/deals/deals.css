@@ -1,0 +1,132 @@
+/* Page styles for DealsPage */
+.deals-section {
+  gap: 0;
+}
+
+.deal-filter__stage {
+  grid-column: span 1;
+  min-width: 0;
+}
+
+.deal-table__date {
+  white-space: nowrap;
+}
+
+.deal-table__nowrap {
+  white-space: nowrap;
+}
+
+.deal-status-badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.deal-status-badge--progress {
+  background: rgba(56, 189, 248, 0.18);
+  color: #bae6fd;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.deal-status-badge--complete {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.deal-status-badge--lost {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.lead-info__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 24px;
+}
+
+.lead-info__column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lead-info__item {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: #ffffff;
+}
+
+.lead-info__label {
+  display: block;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.lead-info__value {
+  display: block;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+}
+
+
+html[data-theme='dark'] .lead-info__item {
+  background: #111c2f;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+html[data-theme='dark'] .lead-info__label {
+  color: #94a3b8;
+}
+
+html[data-theme='dark'] .lead-info__value {
+  color: #e2e8f0;
+}
+
+html[data-theme='light'] .lead-info__item {
+  background: #ffffff;
+}
+
+html[data-theme='light'] .lead-info__label {
+  color: #94a3b8;
+}
+
+html[data-theme='light'] .lead-info__value {
+  color: #0f172a;
+}
+
+
+html[data-theme='light'] .deal-status-badge--progress {
+  background: rgba(56, 189, 248, 0.12);
+  color: #2563eb;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+html[data-theme='light'] .deal-status-badge--complete {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+html[data-theme='light'] .deal-status-badge--lost {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+@media (max-width: 2000px) {
+  .deal-table__hide {
+    display: none;
+  }
+}

@@ -10,10 +10,12 @@ import {
   deleteCustomerContact
 } from '../../api/customers.api';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
 import Pagination from '../../components/common/Pagination';
 import IconButton from '../../components/common/IconButton';
 import { formatKstDate, formatKstDateTime } from '../../utils/date';
+import './customers.css';
 
 const customerFields = [
   { name: 'company', label: '회사명', type: 'text' },

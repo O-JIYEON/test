@@ -1,3 +1,5 @@
+import './pagination.css';
+
 function Pagination({ page, totalPages, onChange, variant = 'text' }) {
   if (totalPages <= 1) {
     return null;

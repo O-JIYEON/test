@@ -1,3 +1,5 @@
+import './topHeader.css';
+
 function TopHeader({ theme, onToggleTheme }) {
   return (
     <header className="app-header">

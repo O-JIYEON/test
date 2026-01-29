@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom';
 import menuItems from '../../constants/menuItems';
 import Sidebar from './Sidebar';
 import TopHeader from './TopHeader';
+import './appShell.css';
 
 function AppShell() {
   const [theme, setTheme] = useState('light');

@@ -4,6 +4,7 @@ import Pagination from '../../components/common/Pagination';
 import Toast from '../../components/feedback/Toast';
 import { formatKstDateTime } from '../../utils/date';
 import dayjs from '../../utils/date';
+import './activities.css';
 
 const columns = [
   { key: 'lead_code', label: 'Lead Id' },

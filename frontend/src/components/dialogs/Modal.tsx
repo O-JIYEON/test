@@ -1,3 +1,5 @@
+import './modal.css';
+
 function Modal({ isOpen, onClose, className = '', contentClassName = '', children }) {
   if (!isOpen) {
     return null;

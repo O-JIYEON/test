@@ -1,6 +1,7 @@
 import ReactApexChart from 'react-apexcharts';
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
 import IconButton from '../../components/common/IconButton';
 import trashIcon from '../../assets/icon/trash.svg';
@@ -15,6 +16,8 @@ import dayjs, {
   parseDateOnly,
   normalizeDateForCompare
 } from '../../utils/date';
+import './dashboard.css';
+import '../deals/dealModal.css';
 
 const useCountUp = (value, duration = 300) => {
   const [display, setDisplay] = useState(0);

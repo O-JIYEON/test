@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import '../../components/dialogs/modal.css';
 import Pagination from '../../components/common/Pagination';
 import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
+import './leads.css';
 import {
   fetchLeads,
   createLead,

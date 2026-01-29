@@ -169,8 +169,10 @@ routes/
 ## 6. 스타일 규칙
 - 전역 토큰/테마 값은 `src/index.css`에 둔다(프로젝트 기준 유지)
 - 클래스 네이밍은 기존 컨벤션을 따른다(BEM-like 등)
-- “페이지 전용 스타일”은 페이지 폴더 내부에 두는 것을 권장
-  - 예: `pages/leads/leads.css` 또는 CSS module(프로젝트 선택)
+- “페이지 전용 스타일”은 **반드시** 페이지 폴더 내부에 둔다
+  - 예: `pages/leads/leads.css`
+  - 페이지 컴포넌트에서 해당 CSS를 직접 import 한다
+  - `src/index.css`에는 공통/전역 스타일만 남긴다
 
 ---
 

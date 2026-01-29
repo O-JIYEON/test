@@ -1,3 +1,5 @@
+import './iconButton.css';
+
 function IconButton({ type = 'button', className = '', children, ...props }) {
   const classes = ['icon-button', className].filter(Boolean).join(' ');
   return (

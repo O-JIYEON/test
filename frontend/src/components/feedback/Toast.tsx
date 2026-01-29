@@ -1,3 +1,5 @@
+import './toast.css';
+
 function Toast({ message, variant = '', className = '' }) {
   if (!message) {
     return null;
