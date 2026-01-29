@@ -1611,7 +1611,7 @@ function DashboardPage() {
                         목표 {item.goalValue === null ? '-' : formatAmount(item.goalValue)}
                        
                           {item.goalRate === null || item.goalRate === undefined
-                            ? '-'
+                            ? ''
                             : ` (${item.goalRate.toFixed(1)}%)`}
                        
                       </button>
