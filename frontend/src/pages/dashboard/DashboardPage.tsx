@@ -1943,12 +1943,18 @@ function DashboardPage() {
                           </tr>
                           )}
                           {summaryUpcomingDeals.map((deal) => (
-                            <tr key={deal.id} className="data-table__row">
-                            <td>{deal.deal_code || deal.id}</td>
-                            <td>{deal.project_name || '-'}</td>
-                            <td>{deal.company || '-'}</td>
-                            <td>{deal.customer_owner || '-'}</td>
-                            <td>{deal.next_action_content || '-'}</td>
+                            <tr
+                              key={deal.id}
+                              className="data-table__row"
+                              onClick={() => {
+                                openEditModal(deal);
+                              }}
+                            >
+                              <td>{deal.deal_code || deal.id}</td>
+                              <td>{deal.project_name || '-'}</td>
+                              <td>{deal.company || '-'}</td>
+                              <td>{deal.customer_owner || '-'}</td>
+                              <td>{deal.next_action_content || '-'}</td>
                             <td>
                               {formatDate(deal.next_action_date) || '-'}
                               {deal.dday !== null && (
