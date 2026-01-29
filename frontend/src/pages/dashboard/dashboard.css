@@ -1015,7 +1015,8 @@ html[data-theme='dark'] .dashboard__pipeline-chart .apexcharts-data-labels text 
   max-height: 300px;
   overflow-y: auto;
   margin-top: 0;
-  padding: 16px;
+  padding: 0 16px 16px;
+  background: inherit;
 }
 
 .dashboard__table--plain .table__wrapper {
@@ -1027,15 +1028,35 @@ html[data-theme='dark'] .dashboard__pipeline-chart .apexcharts-data-labels text 
   margin-bottom: 0;
 }
 
+.dashboard__table--scroll .table__wrapper .data-table thead tr {
+  height: 65px;
+}
+
 .dashboard__table--scroll .table__wrapper thead th {
   position: sticky;
   top: 0;
-  z-index: 1;
-  background: transparent;
+  z-index: 2;
+  background: #ffffff;
+  border-top: none;
+  border-bottom: 0;
+}
+
+.dashboard__table--scroll .table__wrapper thead tr {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 html[data-theme='dark'] .dashboard__table--scroll .table__wrapper thead th {
-  background: transparent;
+  background: rgba(15, 23, 42, 0.95);
+  border-top: none;
+  border-bottom: 0;
+}
+
+html[data-theme='dark'] .dashboard__table--scroll .table__wrapper thead tr {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.dashboard__table--scroll .table__wrapper .data-table tbody tr:first-child td {
+  border-top: none;
 }
 
 .dashboard__section {

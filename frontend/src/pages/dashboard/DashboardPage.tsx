@@ -284,7 +284,7 @@ function DashboardPage() {
 
   const monthlyData = useMemo(() => {
     const buckets = {};
-    if (periodMode === 'year') {
+    if (summaryPeriodMode === 'year') {
       deals.forEach((deal) => {
         if (getStatus(deal) !== '수주') {
           return;
@@ -327,9 +327,9 @@ function DashboardPage() {
       actual: item.actual,
       goal: Math.round(item.actual * 0.9)
     }));
-  }, [monthlyDeals, periodMode, deals]);
+  }, [monthlyDeals, summaryPeriodMode, deals]);
 
-  const monthlyLabels = monthlyData.map((item) => (periodMode === 'year' ? item.year : item.month));
+  const monthlyLabels = monthlyData.map((item) => (summaryPeriodMode === 'year' ? item.year : item.month));
 
   const monthlySeries = [
     { name: '목표', data: monthlyData.map((item) => item.goal) },
@@ -670,7 +670,7 @@ function DashboardPage() {
       if (lead.deleted_at || lead.deletedAt) {
         return;
       }
-      const key = periodMode === 'year' ? getYearLabel(lead.created_at) : getMonthLabel(lead.created_at);
+      const key = summaryPeriodMode === 'year' ? getYearLabel(lead.created_at) : getMonthLabel(lead.created_at);
       addCount(leadMap, key);
     });
 
@@ -678,11 +678,11 @@ function DashboardPage() {
       if (deal.deleted_at || deal.deletedAt) {
         return;
       }
-      const key = periodMode === 'year' ? getYearLabel(deal.created_at) : getMonthLabel(deal.created_at);
+      const key = summaryPeriodMode === 'year' ? getYearLabel(deal.created_at) : getMonthLabel(deal.created_at);
       addCount(dealMap, key);
       if (getStatus(deal) === '수주') {
         const wonKey =
-          periodMode === 'year' ? getYearLabel(deal.won_date) : getMonthLabel(deal.won_date);
+          summaryPeriodMode === 'year' ? getYearLabel(deal.won_date) : getMonthLabel(deal.won_date);
         addCount(wonMap, wonKey);
       }
     });
@@ -699,7 +699,7 @@ function DashboardPage() {
         { name: '수주 수', data: keys.map((key) => wonMap[key] || 0) }
       ]
     };
-  }, [leads, deals, periodMode]);
+  }, [leads, deals, summaryPeriodMode]);
 
   const ownerDepartmentMap = useMemo(() => {
     return lookupValues.reduce((acc, value) => {
@@ -1929,6 +1929,7 @@ function DashboardPage() {
                         <thead>
                         <tr>
                           <th>Deal ID</th>
+                          <th>프로젝트명</th>
                           <th>회사명</th>
                           <th>담당자(영업)</th>
                           <th>다음액션내용</th>
@@ -1938,12 +1939,13 @@ function DashboardPage() {
                         <tbody>
                           {summaryUpcomingDeals.length === 0 && (
                           <tr className="data-table__row data-table__row--empty">
-                            <td colSpan={5} className="data-table__empty">데이터가 없습니다.</td>
+                            <td colSpan={6} className="data-table__empty">데이터가 없습니다.</td>
                           </tr>
                           )}
                           {summaryUpcomingDeals.map((deal) => (
                             <tr key={deal.id} className="data-table__row">
                             <td>{deal.deal_code || deal.id}</td>
+                            <td>{deal.project_name || '-'}</td>
                             <td>{deal.company || '-'}</td>
                             <td>{deal.customer_owner || '-'}</td>
                             <td>{deal.next_action_content || '-'}</td>
