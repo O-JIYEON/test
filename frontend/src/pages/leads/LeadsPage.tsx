@@ -9,7 +9,7 @@ import {
   fetchLeads,
   createLead,
   updateLead,
-  deleteLead
+  deleteLead as deleteLeadApi
 } from '../../api/leads.api';
 import { fetchCustomers, fetchCustomerContacts } from '../../api/customers.api';
 import { fetchLookupValues } from '../../api/lookup.api';
@@ -510,9 +510,9 @@ function LeadsPage() {
     });
   };
 
-  const deleteLead = async () => {
+  const handleDeleteLead = async () => {
     try {
-      await deleteLead(editingId);
+      await deleteLeadApi(editingId);
       await loadLeads();
       setIsModalOpen(false);
       setEditingId(null);
@@ -534,7 +534,7 @@ function LeadsPage() {
       open: true,
       message: '리드를 삭제하시겠습니까?',
       onConfirm: () => {
-        deleteLead();
+        handleDeleteLead();
         setConfirmState({ open: false, message: '', onConfirm: null });
       }
     });
