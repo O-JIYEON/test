@@ -14,3 +14,5 @@ frontend/pnpm-lock.yaml
 # backend
 backend/node_modules
 backend/pnpm-lock.yaml
+backend/sql/migrate_*.sql
+backend/sql/seed_*.sql

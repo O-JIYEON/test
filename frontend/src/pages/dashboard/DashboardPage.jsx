@@ -1,6 +1,8 @@
 import ReactApexChart from 'react-apexcharts';
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import trashIcon from '../../assets/icon/trash.svg';
+import penLineIcon from '../../assets/icon/penLine.svg';
 
 const useCountUp = (value, duration = 300) => {
   const [display, setDisplay] = useState(0);
@@ -50,7 +52,9 @@ function DashboardPage() {
   const [summaryOwner, setSummaryOwner] = useState('');
   const [goals, setGoals] = useState([]);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [goalDraft, setGoalDraft] = useState(null);
+  const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
+  const [goalFormInput, setGoalFormInput] = useState({ period: '', amount: '' });
+  const [goalFormMode, setGoalFormMode] = useState('create');
   const [goalTab, setGoalTab] = useState('year');
 
   const showToast = (message, type = 'success') => {
@@ -559,8 +563,10 @@ function DashboardPage() {
       value: formatAmount(animatedYearWon),
       goalValue: yearGoal,
       goalType: 'year',
+      goalRate: yearGoal ? (overviewRaw.yearWon / yearGoal) * 100 : null,
       delta: overviewRaw.formatDelta(overviewRaw.yearDelta),
       deltaParts: overviewRaw.formatDeltaParts(overviewRaw.yearDelta, '전년'),
+      deltaValue: overviewRaw.yearDelta,
       deltaClass:
         overviewRaw.yearDelta === null
           ? ''
@@ -574,8 +580,10 @@ function DashboardPage() {
       value: formatAmount(animatedMonthWon),
       goalValue: monthGoal,
       goalType: 'month',
+      goalRate: monthGoal ? (overviewRaw.monthWon / monthGoal) * 100 : null,
       delta: overviewRaw.formatDelta(overviewRaw.monthDelta),
       deltaParts: overviewRaw.formatDeltaParts(overviewRaw.monthDelta, '전월'),
+      deltaValue: overviewRaw.monthDelta,
       deltaClass:
         overviewRaw.monthDelta === null
           ? ''
@@ -1438,35 +1446,70 @@ function DashboardPage() {
     }
   };
 
-  const openGoalModal = () => {
+  const openGoalModal = (tab = goalTab) => {
+    setGoalTab(tab);
     setIsGoalModalOpen(true);
   };
 
-  const openGoalDraft = () => {
-    setGoalDraft({
-      period: goalTab === 'year' ? currentPeriodKeys.yearStart.slice(0, 4) : currentPeriodKeys.monthStart.slice(0, 7),
-      amount: ''
-    });
+  const openGoalFormModal = () => {
+    const defaultPeriod =
+      goalTab === 'year' ? currentPeriodKeys.yearStart.slice(0, 4) : currentPeriodKeys.monthStart.slice(0, 7);
+    setGoalFormInput({ period: defaultPeriod, amount: '' });
+    setGoalFormMode('create');
+    setIsGoalFormOpen(true);
   };
 
-  const handleGoalDraftChange = (field) => (event) => {
+  const openGoalEditModal = (goal) => {
+    const periodStart = goal?.period_start ? String(goal.period_start).slice(0, 10) : '';
+    const period = goal?.period_type === 'year' ? periodStart.slice(0, 4) : periodStart.slice(0, 7);
+    setGoalTab(goal?.period_type || 'year');
+    const rawAmount = goal?.amount ?? '';
+    const formattedAmount = rawAmount === '' || rawAmount === null ? '' : Number(rawAmount).toLocaleString('ko-KR');
+    setGoalFormInput({ period, amount: formattedAmount });
+    setGoalFormMode('edit');
+    setIsGoalFormOpen(true);
+  };
+
+  const handleGoalFormChange = (field) => (event) => {
     const raw = event.target.value || '';
-    const next = field === 'period' && goalTab === 'month'
-      ? raw.replace(/[^\d-]/g, '')
-      : raw.replace(/[^\d]/g, '');
-    setGoalDraft((prev) => ({ ...prev, [field]: next }));
+    let next = raw;
+    if (field === 'period') {
+      if (goalTab === 'year') {
+        next = raw.replace(/[^\d]/g, '').slice(0, 4);
+      } else {
+        const digits = raw.replace(/[^\d]/g, '');
+        if (digits.length <= 4) {
+          next = digits;
+        } else {
+          next = `${digits.slice(0, 4)}-${digits.slice(4, 6)}`;
+        }
+        next = next.slice(0, 7);
+      }
+    } else {
+      const digits = raw.replace(/[^\d]/g, '');
+      next = digits ? Number(digits).toLocaleString('ko-KR') : '';
+    }
+    setGoalFormInput((prev) => ({ ...prev, [field]: next }));
   };
 
-  const saveGoalDraft = async () => {
+  const saveGoalForm = async () => {
     try {
-      if (!goalDraft?.period || !goalDraft?.amount) {
+      if (!goalFormInput.period || !goalFormInput.amount) {
         showToast('기간과 금액을 입력하세요.', 'error');
+        return;
+      }
+      if (goalTab === 'year' && goalFormInput.period.length !== 4) {
+        showToast('연도는 4자리로 입력하세요.', 'error');
+        return;
+      }
+      if (goalTab === 'month' && !/^\d{4}-\d{2}$/.test(goalFormInput.period)) {
+        showToast('연도-월 형식(YYYY-MM)으로 입력하세요.', 'error');
         return;
       }
       const payload = {
         period_type: goalTab,
-        period_start: goalTab === 'year' ? `${goalDraft.period}-01-01` : `${goalDraft.period}-01`,
-        amount: goalDraft.amount
+        period_start: goalTab === 'year' ? `${goalFormInput.period}-01-01` : `${goalFormInput.period}-01`,
+        amount: goalFormInput.amount.replace(/[^\d]/g, '')
       };
       const response = await fetch(`http://${window.location.hostname}:5001/api/goals`, {
         method: 'POST',
@@ -1482,11 +1525,33 @@ function DashboardPage() {
       if (refreshed.ok) {
         setGoals(refreshedData.goals || []);
       }
-      setGoalDraft(null);
+      setGoalFormMode('create');
+      setIsGoalFormOpen(false);
       showToast('목표가 저장되었습니다.', 'success');
     } catch (error) {
       console.error(error);
       showToast('목표 저장에 실패했습니다.', 'error');
+    }
+  };
+
+  const deleteGoal = async (id) => {
+    try {
+      const response = await fetch(`http://${window.location.hostname}:5001/api/goals/${id}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete goal');
+      }
+      const refreshed = await fetch(`http://${window.location.hostname}:5001/api/goals`);
+      const refreshedData = await refreshed.json();
+      if (refreshed.ok) {
+        setGoals(refreshedData.goals || []);
+      }
+      showToast('삭제되었습니다.', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('삭제에 실패했습니다.', 'error');
     }
   };
 
@@ -1515,19 +1580,43 @@ function DashboardPage() {
             <div className="dashboard__overview-cards dashboard__overview-cards--hero">
               {overviewStats.map((item) => (
                 <div className="dashboard__overview-card dashboard__overview-card--hero" key={item.label}>
+                  {item.goalType && (
+                    <button
+                      type="button"
+                      className="dashboard__overview-edit"
+                      onClick={() => openGoalModal(item.goalType)}
+                      data-tooltip="목표 금액 수정"
+                      aria-label={`${item.label} 목표 설정`}
+                    >
+                      <img src={penLineIcon} alt="" />
+                    </button>
+                  )}
                   <div className="dashboard__overview-content">
                     <span className="dashboard__overview-label">{item.label}</span>
                     <strong className="dashboard__overview-value">
                       {item.value}
                       {item.label.includes('수주액') && <span className="dashboard__overview-unit">원</span>}
                       {item.unit && item.value !== '-' && <span className="dashboard__overview-unit">{item.unit}</span>}
+                      {item.deltaValue !== undefined && item.deltaValue !== null && (
+                        <span
+                          className={`dashboard__overview-delta-inline ${item.deltaClass || ''}`}
+                          data-tooltip={item.deltaTooltip || ''}
+                        >
+                          ({Math.abs(item.deltaValue).toFixed(1)}% {item.deltaValue >= 0 ? '↑' : '↓'})
+                        </span>
+                      )}
                     </strong>
                     {item.goalType && (
-                      <button type="button" className="dashboard__overview-goal" onClick={openGoalModal}>
+                      <button type="button" className="dashboard__overview-goal" onClick={() => openGoalModal(item.goalType)}>
                         목표 {item.goalValue === null ? '-' : formatAmount(item.goalValue)}
+                       
+                          {item.goalRate === null || item.goalRate === undefined
+                            ? '-'
+                            : ` (${item.goalRate.toFixed(1)}%)`}
+                       
                       </button>
                     )}
-                    {item.delta && (
+                    {/* {item.delta && item.deltaValue === null && (
                       <em className="dashboard__overview-delta">
                         {item.deltaParts?.prefix === '-' ? '-' : item.deltaParts?.prefix || ''}
                         <span className={`dashboard__overview-delta-text ${item.deltaClass || ''}`}>
@@ -1535,7 +1624,7 @@ function DashboardPage() {
                         </span>
                         {item.deltaParts?.prefix === '-' ? '' : item.deltaParts?.suffix || ''}
                       </em>
-                    )}
+                    )} */}
                   </div>
                 </div>
               ))}
@@ -1958,7 +2047,7 @@ function DashboardPage() {
                   월별
                 </button>
               </div>
-              <button type="button" className="goal-modal__submit" onClick={openGoalDraft}>
+              <button type="button" className="goal-modal__submit" onClick={openGoalFormModal}>
                 등록
               </button>
               <button className="icon-button" type="button" onClick={() => setIsGoalModalOpen(false)} aria-label="닫기">
@@ -1975,54 +2064,79 @@ function DashboardPage() {
                     <tr>
                       <th>기간</th>
                       <th>목표금액(원)</th>
-                      <th />
+                      <th>관리</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {goalDraft && (
-                      <tr className="data-table__row">
-                        <td>
-                          <input
-                            className="goal-modal__input"
-                            type="text"
-                            value={goalDraft.period}
-                            onChange={handleGoalDraftChange('period')}
-                            placeholder={goalTab === 'year' ? 'YYYY' : 'YYYY-MM'}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className="goal-modal__input"
-                            type="text"
-                            value={goalDraft.amount}
-                            onChange={handleGoalDraftChange('amount')}
-                            placeholder="금액"
-                          />
-                        </td>
-                        <td className="goal-modal__actions">
-                          <button type="button" className="goal-modal__action" onClick={saveGoalDraft}>
-                            등록
-                          </button>
-                          <button type="button" className="goal-modal__action goal-modal__action--ghost" onClick={() => setGoalDraft(null)}>
-                            취소
-                          </button>
-                        </td>
-                      </tr>
-                    )}
                     {goalRows.length === 0 && (
                       <tr className="data-table__row data-table__row--empty">
                         <td colSpan={3} className="data-table__empty">데이터가 없습니다.</td>
                       </tr>
                     )}
                     {goalRows.map((goal) => (
-                      <tr key={goal.id} className="data-table__row">
+                      <tr key={goal.id} className="data-table__row" onClick={() => openGoalEditModal(goal)}>
                         <td>{formatGoalPeriod(goal)}</td>
                         <td>{formatAmount(goal.amount)}</td>
-                        <td />
+                        <td className="goal-modal__actions">
+                          <button
+                            type="button"
+                            className="goal-modal__action goal-modal__action--ghost"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteGoal(goal.id);
+                            }}
+                          >
+                            <img src={trashIcon} alt="삭제" className="goal-modal__trash" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isGoalFormOpen && (
+        <div className="modal">
+          <div className="modal__overlay" onClick={() => setIsGoalFormOpen(false)} />
+          <div className="modal__content modal__content--white goal-modal goal-modal--compact" role="dialog" aria-modal="true">
+            <div className="modal__header">
+              <h3>목표 등록</h3>
+              <button className="icon-button" type="button" onClick={() => setIsGoalFormOpen(false)} aria-label="닫기">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
+                  <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
+                </svg>
+              </button>
+            </div>
+            <div className="modal__body">
+              <div className="goal-modal__grid">
+                <label className="project-form__field">
+                  <input
+                    type="text"
+                    value={goalFormInput.period}
+                    onChange={handleGoalFormChange('period')}
+                    placeholder=" "
+                  />
+                  <span>{goalTab === 'year' ? '연도' : '연도-월'}</span>
+                </label>
+                <label className="project-form__field">
+                  <input
+                    type="text"
+                    value={goalFormInput.amount}
+                    onChange={handleGoalFormChange('amount')}
+                    placeholder=" "
+                  />
+                  <span>금액(원)</span>
+                </label>
+              </div>
+              <div className="form-actions modal__actions">
+                <button type="button" className="project-form__submit" onClick={saveGoalForm}>
+                  저장
+                </button>
               </div>
             </div>
           </div>

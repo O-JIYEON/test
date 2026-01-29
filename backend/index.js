@@ -1747,6 +1747,27 @@ async function upsertGoal(req, res) {
   }
 }
 
+async function deleteGoal(req, res) {
+  let connection;
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res.status(400).json({ error: 'Missing goal id' });
+      return;
+    }
+    connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.query('DELETE FROM `goals` WHERE id = ?', [id]);
+    res.json({ deleted: result.affectedRows });
+  } catch (error) {
+    console.error('Failed to delete goal:', error);
+    res.status(500).json({ error: 'Failed to delete goal' });
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
@@ -1794,6 +1815,7 @@ app.delete('/api/lookup-values/:id', deleteLookupValue);
 app.get('/api/activity-logs', getActivityLogs);
 app.get('/api/goals', getGoals);
 app.post('/api/goals', upsertGoal);
+app.delete('/api/goals/:id', deleteGoal);
 app.get('/api/deals', getDeals);
 app.post('/api/deals', createDeal);
 app.put('/api/deals/:id', updateDeal);
