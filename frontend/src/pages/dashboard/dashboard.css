@@ -1024,6 +1024,10 @@ html[data-theme='dark'] .dashboard__pipeline-chart .apexcharts-data-labels text 
   overflow: visible;
 }
 
+.dashboard__table--summary .table__wrapper {
+  max-height: 300px;
+}
+
 .dashboard__table--scroll .table__wrapper table {
   margin-bottom: 0;
 }
@@ -1032,27 +1036,40 @@ html[data-theme='dark'] .dashboard__pipeline-chart .apexcharts-data-labels text 
   height: 65px;
 }
 
-.dashboard__table--scroll .table__wrapper thead th {
+.dashboard__table--scroll .table__wrapper thead {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
   background: #ffffff;
   border-top: none;
-  border-bottom: 0;
 }
 
-.dashboard__table--scroll .table__wrapper thead tr {
-  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+.dashboard__table--scroll .table__wrapper thead::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: rgba(226, 232, 240, 0.9);
+}
+
+.dashboard__table--scroll .table__wrapper thead th {
+  background: #ffffff;
+  border-top: none;
+  border-bottom: none;
+}
+
+html[data-theme='dark'] .dashboard__table--scroll .table__wrapper thead {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+html[data-theme='dark'] .dashboard__table--scroll .table__wrapper thead::after {
+  background: rgba(148, 163, 184, 0.35);
 }
 
 html[data-theme='dark'] .dashboard__table--scroll .table__wrapper thead th {
   background: rgba(15, 23, 42, 0.95);
-  border-top: none;
-  border-bottom: 0;
-}
-
-html[data-theme='dark'] .dashboard__table--scroll .table__wrapper thead tr {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 .dashboard__table--scroll .table__wrapper .data-table tbody tr:first-child td {

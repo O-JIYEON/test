@@ -1684,7 +1684,7 @@ function DashboardPage() {
                   </button>
                 </div>
               </div>
-              <div className="dashboard__table dashboard__table--plain">
+              <div className="dashboard__table dashboard__table--scroll dashboard__table--summary">
                 <div className="table__wrapper">
                   <table className="data-table">
                     <thead>
