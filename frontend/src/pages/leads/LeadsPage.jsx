@@ -1,8 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import ConfirmDialog from '../../components/ConfirmDialog';
-import dayjs from 'dayjs';
-
-const API_BASE = `http://${window.location.hostname}:5001`;
+import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import Pagination from '../../components/common/Pagination';
+import IconButton from '../../components/common/IconButton';
+import Toast from '../../components/feedback/Toast';
+import {
+  fetchLeads,
+  createLead,
+  updateLead,
+  deleteLead
+} from '../../api/leads.api';
+import { fetchCustomers, fetchCustomerContacts } from '../../api/customers.api';
+import { fetchLookupValues } from '../../api/lookup.api';
+import dayjs, {
+  formatDate as formatDateValue,
+  formatDateTime as formatDateTimeValue,
+  normalizeDateForCompare,
+  parseDateOnly
+} from '../../utils/date';
 
 const defaultLeadStatusOptions = ['신규', '접촉중', '딜전환', '폐기', '보류'];
 const defaultSourceOptions = ['문의(웹/매일)', '소개', '전시/세미나', '재접촉', '콜드', '파트너'];
@@ -63,26 +77,14 @@ const leadStatusClassMap = {
   보류: 'hold'
 };
 
-const formatDate = (value) => {
-  if (!value) {
-    return '';
-  }
-  const text = String(value);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-    return text;
-  }
-  if (text.includes('T') || text.includes(' ')) {
-    return text.slice(0, 10);
-  }
-  return text.length >= 10 ? text.slice(0, 10) : text;
-};
+const formatDate = (value) => formatDateValue(value);
 
 const formatDateTime = (value) => {
   if (!value) {
     return '';
   }
 
-  return dayjs(value).format('YYYY-MM-DD HH:mm');
+  return formatDateTimeValue(value);
 };
 
 const formatLeadId = (lead) => {
@@ -99,14 +101,12 @@ const getDdayText = (value) => {
   if (!value) {
     return '';
   }
-  const normalized = String(value).slice(0, 10);
-  const target = new Date(`${normalized}T00:00:00`);
-  if (Number.isNaN(target.getTime())) {
+  const target = parseDateOnly(value);
+  if (!target) {
     return '';
   }
-  const today = new Date();
-  const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
-  const diffDays = Math.ceil((target.getTime() - normalizedToday.getTime()) / (1000 * 60 * 60 * 24));
+  const normalizedToday = normalizeDateForCompare(dayjs());
+  const diffDays = Math.ceil(target.diff(normalizedToday, 'day', true));
   if (diffDays === 0) {
     return 'D-0';
   }
@@ -210,11 +210,7 @@ function LeadsPage() {
   const loadLeads = async () => {
     try {
       setStatus('loading');
-      const response = await fetch(`${API_BASE}/api/leads`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch leads');
-      }
+      const data = await fetchLeads();
       setLeads(data.leads || []);
       setStatus('ready');
       setPage(1);
@@ -227,11 +223,7 @@ function LeadsPage() {
 
   const loadCustomers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/customers`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch customers');
-      }
+      const data = await fetchCustomers();
       setCustomers(data.customers || []);
     } catch (error) {
       console.error(error);
@@ -241,11 +233,7 @@ function LeadsPage() {
 
   const loadLookupValues = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/lookup-values`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch lookup values');
-      }
+      const data = await fetchLookupValues();
       setLookupValues(data.values || []);
     } catch (error) {
       console.error(error);
@@ -259,13 +247,7 @@ function LeadsPage() {
       return;
     }
     try {
-      const response = await fetch(
-        `${API_BASE}/api/customer-contacts?customer_id=${customerId}`
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch customer contacts');
-      }
+      const data = await fetchCustomerContacts(customerId);
       setCustomerContacts(data.contacts || []);
     } catch (error) {
       console.error(error);
@@ -491,18 +473,9 @@ function LeadsPage() {
       }
 
       const leadPayload = { ...formData, customer_id: customerId };
-      const response = await fetch(
-        editingId ? `${API_BASE}/api/leads/${editingId}` : `${API_BASE}/api/leads`,
-        {
-          method: editingId ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(leadPayload)
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save lead');
-      }
+      const data = editingId
+        ? await updateLead(editingId, leadPayload)
+        : await createLead(leadPayload);
       await loadLeads();
       setIsModalOpen(false);
       setEditingId(null);
@@ -537,13 +510,7 @@ function LeadsPage() {
 
   const deleteLead = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/leads/${editingId}`, {
-        method: 'DELETE'
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete lead');
-      }
+      await deleteLead(editingId);
       await loadLeads();
       setIsModalOpen(false);
       setEditingId(null);
@@ -872,9 +839,7 @@ function LeadsPage() {
                             <td key={column.key} className={cellClassName}>
                               {email ? (
                                 <span className="email-icon-wrapper">
-                                  <button
-                                    className="icon-button"
-                                    type="button"
+                                  <IconButton
                                     aria-label="이메일 복사"
                                     onClick={(event) => {
                                       event.stopPropagation();
@@ -897,7 +862,7 @@ function LeadsPage() {
                                         strokeLinecap="round"
                                       />
                                     </svg>
-                                  </button>
+                                  </IconButton>
                                   <span className="email-tooltip">{email}</span>
                                 </span>
                               ) : (
@@ -919,42 +884,7 @@ function LeadsPage() {
             </div>
           )}
           {status === 'ready' && sortedLeads.length > 0 && (
-            <div className="pagination">
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={clampedPage === 1}
-                aria-label="이전 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M15.5 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-              <div className="pagination__pages">
-                {pages.map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    className={`pagination__page${pageNumber === clampedPage ? ' pagination__page--active' : ''}`}
-                    type="button"
-                    onClick={() => setPage(pageNumber)}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
-              </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={clampedPage === totalPages}
-                aria-label="다음 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8.5 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-            </div>
+            <Pagination page={clampedPage} totalPages={totalPages} onChange={setPage} variant="icon" />
           )}
         </div>
       </section>
@@ -965,12 +895,12 @@ function LeadsPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>{editingId ? '리드 수정' : '리드 등록'}</h3>
-                <button className="icon-button" type="button" onClick={closeModal} aria-label="닫기">
+                <IconButton onClick={closeModal} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <form className="project-form modal__body lead-form" onSubmit={handleSubmit}>
@@ -1255,7 +1185,7 @@ function LeadsPage() {
         onConfirm={confirmState.onConfirm || handleConfirmCancel}
         onCancel={handleConfirmCancel}
       />
-      {toastMessage && <div className={`toast toast--${toastType}`}>{toastMessage}</div>}
+      <Toast message={toastMessage} variant={toastType} />
     </>
   );
 }

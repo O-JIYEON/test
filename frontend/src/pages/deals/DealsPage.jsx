@@ -1,9 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import ConfirmDialog from '../../components/ConfirmDialog';
-import dayjs from 'dayjs';
-
-const API_BASE = `http://${window.location.hostname}:5001`;
+import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import {
+  fetchDeals,
+  createDeal,
+  updateDeal,
+  deleteDeal
+} from '../../api/deals.api';
+import { fetchLeads } from '../../api/leads.api';
+import { fetchActivityLogs } from '../../api/activities.api';
+import { fetchLookupValues } from '../../api/lookup.api';
+import Pagination from '../../components/common/Pagination';
+import IconButton from '../../components/common/IconButton';
+import Toast from '../../components/feedback/Toast';
+import dayjs, {
+  formatDate as formatDateValue,
+  formatDateTime as formatDateTimeValue,
+  normalizeDateForCompare,
+  parseDateOnly
+} from '../../utils/date';
 
 const defaultStageOptions = [
   '자격확인(가능성판단)',
@@ -91,26 +106,14 @@ const dealColumns = [
   { key: 'inactive_days', label: '무활동일수' }
 ];
 
-const formatDate = (value) => {
-  if (!value) {
-    return '';
-  }
-  const text = String(value);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-    return text;
-  }
-  if (text.includes('T') || text.includes(' ')) {
-    return text.slice(0, 10);
-  }
-  return text.length >= 10 ? text.slice(0, 10) : text;
-};
+const formatDate = (value) => formatDateValue(value);
 
 const formatDateTime = (value) => {
   if (!value) {
     return '';
   }
 
-  return dayjs(value).format('YYYY-MM-DD HH:mm');
+  return formatDateTimeValue(value);
 };
 
 const formatAmount = (value) => {
@@ -138,14 +141,12 @@ const getInactiveDays = (nextActionDate) => {
   if (!nextActionDate) {
     return 0;
   }
-  const dateValue = new Date(String(nextActionDate).slice(0, 10) + 'T00:00:00');
-  if (Number.isNaN(dateValue.getTime())) {
+  const target = parseDateOnly(nextActionDate);
+  if (!target) {
     return 0;
   }
-  const today = new Date();
-  const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
-  const diffTime = normalizedToday.getTime() - dateValue.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const normalizedToday = normalizeDateForCompare(dayjs());
+  const diffDays = normalizedToday.diff(target, 'day');
   return diffDays > 0 ? diffDays : 0;
 };
 
@@ -153,14 +154,12 @@ const getDdayText = (value) => {
   if (!value) {
     return '';
   }
-  const normalized = String(value).slice(0, 10);
-  const target = new Date(`${normalized}T00:00:00`);
-  if (Number.isNaN(target.getTime())) {
+  const target = parseDateOnly(value);
+  if (!target) {
     return '';
   }
-  const today = new Date();
-  const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
-  const diffDays = Math.ceil((target.getTime() - normalizedToday.getTime()) / (1000 * 60 * 60 * 24));
+  const normalizedToday = normalizeDateForCompare(dayjs());
+  const diffDays = Math.ceil(target.diff(normalizedToday, 'day', true));
   if (diffDays === 0) {
     return 'D-0';
   }
@@ -269,11 +268,7 @@ function DealsPage() {
   const loadDeals = async () => {
     try {
       setStatus('loading');
-      const response = await fetch(`${API_BASE}/api/deals`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch deals');
-      }
+      const data = await fetchDeals();
       setDeals(data.deals || []);
       setStatus('ready');
       setPage(1);
@@ -286,11 +281,7 @@ function DealsPage() {
 
   const loadLeads = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/leads`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch leads');
-      }
+      const data = await fetchLeads();
       setLeads(data.leads || []);
     } catch (error) {
       console.error(error);
@@ -300,11 +291,7 @@ function DealsPage() {
 
   const loadActivityLogs = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/activity-logs`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch activity logs');
-      }
+      const data = await fetchActivityLogs();
       setActivityLogs(data.logs || []);
     } catch (error) {
       console.error(error);
@@ -314,11 +301,7 @@ function DealsPage() {
 
   const loadLookupValues = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/lookup-values`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch lookup values');
-      }
+      const data = await fetchLookupValues();
       setLookupValues(data.values || []);
     } catch (error) {
       console.error(error);
@@ -416,18 +399,7 @@ function DealsPage() {
             ? String(formData.expected_amount).replace(/,/g, '')
             : formData.expected_amount
       };
-      const response = await fetch(
-        editingId ? `${API_BASE}/api/deals/${editingId}` : `${API_BASE}/api/deals`,
-        {
-          method: editingId ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save deal');
-      }
+      const data = editingId ? await updateDeal(editingId, payload) : await createDeal(payload);
       await loadDeals();
       await loadActivityLogs();
       setIsModalOpen(false);
@@ -458,13 +430,7 @@ function DealsPage() {
 
   const deleteDeal = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/deals/${editingId}`, {
-        method: 'DELETE'
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete deal');
-      }
+      await deleteDeal(editingId);
       await loadDeals();
       setIsModalOpen(false);
       setEditingId(null);
@@ -849,42 +815,7 @@ function DealsPage() {
             </div>
           )}
           {status === 'ready' && filteredDeals.length > 0 && (
-            <div className="pagination">
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={clampedPage === 1}
-                aria-label="이전 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M15.5 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-              <div className="pagination__pages">
-                {pages.map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    className={`pagination__page${pageNumber === clampedPage ? ' pagination__page--active' : ''}`}
-                    type="button"
-                    onClick={() => setPage(pageNumber)}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
-              </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={clampedPage === totalPages}
-                aria-label="다음 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8.5 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-            </div>
+            <Pagination page={clampedPage} totalPages={totalPages} onChange={setPage} variant="icon" />
           )}
         </div>
       </section>
@@ -899,12 +830,12 @@ function DealsPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>{editingId ? '딜 수정' : '딜 등록'}</h3>
-                <button className="icon-button" type="button" onClick={closeModal} aria-label="닫기">
+                <IconButton onClick={closeModal} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
@@ -1130,7 +1061,7 @@ function DealsPage() {
         onConfirm={confirmState.onConfirm || handleConfirmCancel}
         onCancel={handleConfirmCancel}
       />
-      {toastMessage && <div className={`toast toast--${toastType}`}>{toastMessage}</div>}
+      <Toast message={toastMessage} variant={toastType} />
       {isLeadModalOpen && (
         <div className="modal">
           <div className="modal__overlay" onClick={closeLeadModal} />
@@ -1138,12 +1069,12 @@ function DealsPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>리드 정보</h3>
-                <button className="icon-button" type="button" onClick={closeLeadModal} aria-label="닫기">
+                <IconButton onClick={closeLeadModal} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <div className="modal__body">

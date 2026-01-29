@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-
-const API_BASE = `http://${window.location.hostname}:5001`;
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { fetchActivityLogs } from '../../api/activities.api';
+import Pagination from '../../components/common/Pagination';
+import Toast from '../../components/feedback/Toast';
+import { formatKstDateTime } from '../../utils/date';
+import dayjs from '../../utils/date';
 
 const columns = [
   { key: 'lead_code', label: 'Lead Id' },
@@ -20,12 +17,7 @@ const columns = [
   { key: 'sales_owner', label: '담당자(영업)' }
 ];
 
-const formatDate = (value) => {
-  if (!value) {
-    return '';
-  }
-  return dayjs.utc(value).tz('Asia/Seoul').format('YYYY-MM-DD HH:mm');
-};
+const formatDate = (value) => formatKstDateTime(value);
 
 function ActivitiesPage() {
   const [logs, setLogs] = useState([]);
@@ -91,11 +83,7 @@ function ActivitiesPage() {
   const loadLogs = async () => {
     try {
       setStatus('loading');
-      const response = await fetch(`${API_BASE}/api/activity-logs`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch activity logs');
-      }
+      const data = await fetchActivityLogs();
       setLogs(data.logs || []);
       setStatus('ready');
       setPage(1);
@@ -248,46 +236,11 @@ function ActivitiesPage() {
             </div>
           )}
           {status === 'ready' && filteredLogs.length > 0 && (
-            <div className="pagination">
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={clampedPage === 1}
-                aria-label="이전 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M15.5 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-              <div className="pagination__pages">
-                {pages.map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    className={`pagination__page${pageNumber === clampedPage ? ' pagination__page--active' : ''}`}
-                    type="button"
-                    onClick={() => setPage(pageNumber)}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
-              </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={clampedPage === totalPages}
-                aria-label="다음 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8.5 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-            </div>
+            <Pagination page={clampedPage} totalPages={totalPages} onChange={setPage} variant="icon" />
           )}
         </div>
       </section>
-      {toastMessage && <div className="toast">{toastMessage}</div>}
+      <Toast message={toastMessage} />
     </>
   );
 }

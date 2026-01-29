@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import dashboardIcon from '../assets/icon/dashboard.svg';
-import customersIcon from '../assets/icon/customers.svg';
-import dealIcon from '../assets/icon/deal.svg';
-import historyIcon from '../assets/icon/history.svg';
-import leadIcon from '../assets/icon/lead.svg';
-import settingIcon from '../assets/icon/setting.svg';
+import dashboardIcon from '../../assets/icon/dashboard.svg';
+import customersIcon from '../../assets/icon/customers.svg';
+import dealIcon from '../../assets/icon/deal.svg';
+import historyIcon from '../../assets/icon/history.svg';
+import leadIcon from '../../assets/icon/lead.svg';
+import settingIcon from '../../assets/icon/setting.svg';
 
 const menuIcons = {
   대시보드: dashboardIcon,

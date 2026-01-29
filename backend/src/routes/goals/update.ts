@@ -11,11 +11,14 @@ export async function upsertGoal(req, res) {
     }
     const normalizedAmount = normalizeNumberValue(amount) ?? 0;
     const normalizedDate = normalizeDateValue(period_start);
-    await Goal.upsert({
-      period_type,
-      period_start: normalizedDate,
-      amount: normalizedAmount
-    });
+    await Goal.upsert(
+      {
+        period_type,
+        period_start: normalizedDate,
+        amount: normalizedAmount
+      },
+      { fields: ['period_type', 'period_start', 'amount'] }
+    );
     res.json({ ok: true });
   } catch (error) {
     console.error('Failed to save goal:', error);

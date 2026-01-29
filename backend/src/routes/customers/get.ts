@@ -10,25 +10,25 @@ export async function getCustomers(req, res) {
         include: [
           [
             Sequelize.literal(
-              '(SELECT COUNT(*) FROM `customer_contacts` cc WHERE cc.customer_id = `customers`.id)'
+              '(SELECT COUNT(*) FROM `customer_contacts` cc WHERE cc.customer_id = `Customer`.id)'
             ),
             'contact_count'
           ],
           [
             Sequelize.literal(
-              '(SELECT cc.name FROM `customer_contacts` cc WHERE cc.customer_id = `customers`.id ORDER BY cc.id ASC LIMIT 1)'
+              '(SELECT cc.name FROM `customer_contacts` cc WHERE cc.customer_id = `Customer`.id ORDER BY cc.id ASC LIMIT 1)'
             ),
             'owner'
           ],
           [
             Sequelize.literal(
-              '(SELECT cc.contact FROM `customer_contacts` cc WHERE cc.customer_id = `customers`.id ORDER BY cc.id ASC LIMIT 1)'
+              '(SELECT cc.contact FROM `customer_contacts` cc WHERE cc.customer_id = `Customer`.id ORDER BY cc.id ASC LIMIT 1)'
             ),
             'contact'
           ],
           [
             Sequelize.literal(
-              '(SELECT cc.email FROM `customer_contacts` cc WHERE cc.customer_id = `customers`.id ORDER BY cc.id ASC LIMIT 1)'
+              '(SELECT cc.email FROM `customer_contacts` cc WHERE cc.customer_id = `Customer`.id ORDER BY cc.id ASC LIMIT 1)'
             ),
             'email'
           ]

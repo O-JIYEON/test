@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import ConfirmDialog from '../../components/ConfirmDialog';
-
-const API_BASE = `http://${window.location.hostname}:5001`;
+import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import IconButton from '../../components/common/IconButton';
+import Toast from '../../components/feedback/Toast';
+import {
+  fetchLookupCategories,
+  fetchLookupValues,
+  createLookupCategory,
+  updateLookupCategory,
+  deleteLookupCategory,
+  createLookupValue,
+  updateLookupValue,
+  deleteLookupValue
+} from '../../api/lookup.api';
 
 const categoryColumns = [
   { key: 'id', label: 'id' },
@@ -41,14 +51,11 @@ function SettingsPage() {
 
   const loadCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/lookup-categories`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch categories');
-      }
-      setCategories(data.categories || []);
-      if (!selectedCategoryId && data.categories?.length) {
-        setSelectedCategoryId(data.categories[0].id);
+      const data = await fetchLookupCategories();
+      const nextCategories = data.categories || [];
+      setCategories(nextCategories);
+      if (!selectedCategoryId && nextCategories.length) {
+        setSelectedCategoryId(nextCategories[0].id);
       }
     } catch (error) {
       console.error(error);
@@ -58,11 +65,7 @@ function SettingsPage() {
 
   const loadValues = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/lookup-values`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch values');
-      }
+      const data = await fetchLookupValues();
       setValues(data.values || []);
     } catch (error) {
       console.error(error);
@@ -133,17 +136,10 @@ function SettingsPage() {
       label: categoryForm.label
     };
     try {
-      const response = await fetch(
-        categoryEditingId ? `${API_BASE}/api/lookup-categories/${categoryEditingId}` : `${API_BASE}/api/lookup-categories`,
-        {
-          method: categoryEditingId ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save category');
+      if (categoryEditingId) {
+        await updateLookupCategory(categoryEditingId, payload);
+      } else {
+        await createLookupCategory(payload);
       }
       await loadCategories();
       setIsCategoryModalOpen(false);
@@ -171,17 +167,10 @@ function SettingsPage() {
       delete payload.department;
     }
     try {
-      const response = await fetch(
-        valueEditingId ? `${API_BASE}/api/lookup-values/${valueEditingId}` : `${API_BASE}/api/lookup-values`,
-        {
-          method: valueEditingId ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save value');
+      if (valueEditingId) {
+        await updateLookupValue(valueEditingId, payload);
+      } else {
+        await createLookupValue(payload);
       }
       await loadValues();
       setIsValueModalOpen(false);
@@ -198,11 +187,7 @@ function SettingsPage() {
       message: '값을 삭제하시겠습니까?',
       onConfirm: async () => {
         try {
-          const response = await fetch(`${API_BASE}/api/lookup-values/${id}`, { method: 'DELETE' });
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to delete value');
-          }
+          await deleteLookupValue(id);
           await loadValues();
           showToast('값이 삭제되었습니다.');
         } catch (error) {
@@ -345,9 +330,7 @@ function SettingsPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>{categoryEditingId ? '카테고리 수정' : '카테고리 등록'}</h3>
-                <button
-                  className="icon-button"
-                  type="button"
+                <IconButton
                   onClick={() => setIsCategoryModalOpen(false)}
                   aria-label="닫기"
                 >
@@ -355,7 +338,7 @@ function SettingsPage() {
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <form className="project-form modal__body" onSubmit={handleCategorySubmit}>
@@ -386,9 +369,7 @@ function SettingsPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>{valueEditingId ? '값 수정' : '값 등록'}</h3>
-                <button
-                  className="icon-button"
-                  type="button"
+                <IconButton
                   onClick={() => setIsValueModalOpen(false)}
                   aria-label="닫기"
                 >
@@ -396,7 +377,7 @@ function SettingsPage() {
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <form className="project-form modal__body" onSubmit={handleValueSubmit}>
@@ -464,7 +445,7 @@ function SettingsPage() {
         onConfirm={confirmState.onConfirm || (() => setConfirmState({ open: false, message: '', onConfirm: null }))}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
-      {toastMessage && <div className="toast">{toastMessage}</div>}
+      <Toast message={toastMessage} />
     </>
   );
 }

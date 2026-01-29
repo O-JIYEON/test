@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react';
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-import ConfirmDialog from '../../components/ConfirmDialog';
-
-const API_BASE = `http://${window.location.hostname}:5001`;
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import {
+  fetchCustomers,
+  fetchCustomerContacts,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+  createCustomerContact,
+  updateCustomerContact,
+  deleteCustomerContact
+} from '../../api/customers.api';
+import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import Toast from '../../components/feedback/Toast';
+import Pagination from '../../components/common/Pagination';
+import IconButton from '../../components/common/IconButton';
+import { formatKstDate, formatKstDateTime } from '../../utils/date';
 
 const customerFields = [
   { name: 'company', label: '회사명', type: 'text' },
@@ -40,19 +46,8 @@ const contactColumns = [
   { key: 'updated_at', label: '수정일', hidden: true }
 ];
 
-const formatDate = (value) => {
-  if (!value) {
-    return '';
-  }
-  return dayjs.utc(value).tz('Asia/Seoul').format('YYYY-MM-DD HH:mm');
-};
-
-const formatDateOnly = (value) => {
-  if (!value) {
-    return '';
-  }
-  return dayjs.utc(value).tz('Asia/Seoul').format('YYYY-MM-DD');
-};
+const formatDate = (value) => formatKstDateTime(value);
+const formatDateOnly = (value) => formatKstDate(value);
 
 function CustomersPage() {
   const [items, setItems] = useState([]);
@@ -87,11 +82,7 @@ function CustomersPage() {
   const loadItems = async () => {
     try {
       setStatus('loading');
-      const response = await fetch(`${API_BASE}/api/customers`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch customers');
-      }
+      const data = await fetchCustomers();
       const nextItems = data.customers || [];
       setItems(nextItems);
       setStatus('ready');
@@ -117,13 +108,7 @@ function CustomersPage() {
     }
     try {
       setContactsStatus('loading');
-      const response = await fetch(
-        `${API_BASE}/api/customer-contacts?customer_id=${customerId}`
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch contacts');
-      }
+      const data = await fetchCustomerContacts(customerId);
       const nextContacts = data.contacts || [];
       setContacts(nextContacts);
       setContactsStatus('ready');
@@ -221,24 +206,10 @@ function CustomersPage() {
   const submitItem = async () => {
     setFormStatus('saving');
     try {
-      const response = await fetch(
-        editingId
-          ? `${API_BASE}/api/customers/${editingId}`
-          : `${API_BASE}/api/customers`,
-        {
-          method: editingId ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        if (response.status === 409) {
-          showToast('등록된 사업자번호가 있습니다.', 'error');
-          setFormStatus('error');
-          return;
-        }
-        throw new Error(data.error || 'Failed to save customers');
+      if (editingId) {
+        await updateCustomer(editingId, formData);
+      } else {
+        await createCustomer(formData);
       }
       await loadItems();
       setIsModalOpen(false);
@@ -249,6 +220,11 @@ function CustomersPage() {
       showToast(editingId ? '고객사가 수정되었습니다.' : '고객사가 등록되었습니다.');
     } catch (error) {
       console.error(error);
+      if (error.status === 409) {
+        showToast('등록된 사업자번호가 있습니다.', 'error');
+        setFormStatus('error');
+        return;
+      }
       setFormStatus('error');
       setErrorMessage('저장에 실패했습니다.');
       showToast('저장에 실패했습니다.', 'error');
@@ -269,13 +245,7 @@ function CustomersPage() {
 
   const deleteItem = async (item) => {
     try {
-      const response = await fetch(`${API_BASE}/api/customers/${item.id}`, {
-        method: 'DELETE'
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete customers');
-      }
+      await deleteCustomer(item.id);
       await loadItems();
       setIsModalOpen(false);
       setEditingId(null);
@@ -313,19 +283,10 @@ function CustomersPage() {
     setContactFormStatus('saving');
     try {
       const payload = { ...contactFormData, customer_id: selectedCustomerId };
-      const response = await fetch(
-        contactEditingId
-          ? `${API_BASE}/api/customer-contacts/${contactEditingId}`
-          : `${API_BASE}/api/customer-contacts`,
-        {
-          method: contactEditingId ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save contact');
+      if (contactEditingId) {
+        await updateCustomerContact(contactEditingId, payload);
+      } else {
+        await createCustomerContact(payload);
       }
       await loadContacts(selectedCustomerId);
       await loadItems();
@@ -361,13 +322,7 @@ function CustomersPage() {
       if (!targetId) {
         return;
       }
-      const response = await fetch(`${API_BASE}/api/customer-contacts/${targetId}`, {
-        method: 'DELETE'
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete contact');
-      }
+      await deleteCustomerContact(targetId);
       await loadContacts(selectedCustomerId);
       await loadItems();
       setIsContactModalOpen(false);
@@ -518,9 +473,7 @@ function CustomersPage() {
                           if (column.key === 'edit') {
                             return (
                               <td key={column.key}>
-                                <button
-                                  className="icon-button"
-                                  type="button"
+                                <IconButton
                                   onClick={(event) => {
                                     event.stopPropagation();
                                     openEditModal(item);
@@ -545,7 +498,7 @@ function CustomersPage() {
                                       strokeLinejoin="round"
                                     />
                                   </svg>
-                                </button>
+                                </IconButton>
                               </td>
                             );
                           }
@@ -558,42 +511,7 @@ function CustomersPage() {
             </div>
           )}
           {status === 'ready' && filteredCustomers.length > 0 && (
-            <div className="pagination">
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                disabled={clampedPage === 1}
-                aria-label="이전 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M15.5 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-              <div className="pagination__pages">
-                {pages.map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    className={`pagination__page${pageNumber === clampedPage ? ' pagination__page--active' : ''}`}
-                    type="button"
-                    onClick={() => setPage(pageNumber)}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
-              </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={clampedPage === totalPages}
-                aria-label="다음 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8.5 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-            </div>
+            <Pagination page={clampedPage} totalPages={totalPages} onChange={setPage} variant="icon" />
           )}
           </div>
         </div>
@@ -682,9 +600,7 @@ function CustomersPage() {
                           if (column.key === 'delete') {
                             return (
                               <td key={column.key} className={cellClassName}>
-                                <button
-                                  className="icon-button"
-                                  type="button"
+                                <IconButton
                                   onClick={(event) => {
                                     event.stopPropagation();
                                     handleContactDelete(item.id);
@@ -717,7 +633,7 @@ function CustomersPage() {
                                       strokeLinejoin="round"
                                     />
                                   </svg>
-                                </button>
+                                </IconButton>
                               </td>
                             );
                           }
@@ -734,42 +650,12 @@ function CustomersPage() {
             </div>
           )}
           {selectedCustomerId && contactsStatus === 'ready' && filteredContacts.length > 0 && (
-            <div className="pagination">
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setContactPage((prev) => Math.max(1, prev - 1))}
-                disabled={clampedContactPage === 1}
-                aria-label="이전 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M15.5 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-              <div className="pagination__pages">
-                {contactPages.map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    className={`pagination__page${pageNumber === clampedContactPage ? ' pagination__page--active' : ''}`}
-                    type="button"
-                    onClick={() => setContactPage(pageNumber)}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
-              </div>
-              <button
-                className="icon-button"
-                type="button"
-                onClick={() => setContactPage((prev) => Math.min(contactTotalPages, prev + 1))}
-                disabled={clampedContactPage === contactTotalPages}
-                aria-label="다음 페이지"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8.5 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" />
-                </svg>
-              </button>
-            </div>
+            <Pagination
+              page={clampedContactPage}
+              totalPages={contactTotalPages}
+              onChange={setContactPage}
+              variant="icon"
+            />
           )}
           </div>
         </div>
@@ -781,12 +667,12 @@ function CustomersPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>{editingId ? '고객사 수정' : '고객사 등록'}</h3>
-                <button className="icon-button" type="button" onClick={closeModal} aria-label="닫기">
+                <IconButton onClick={closeModal} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <form className="project-form modal__body" onSubmit={handleSubmit}>
@@ -845,12 +731,12 @@ function CustomersPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>{contactEditingId ? '담당자 수정' : '담당자 등록'}</h3>
-                <button className="icon-button" type="button" onClick={closeContactModal} aria-label="닫기">
+                <IconButton onClick={closeContactModal} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <form className="project-form modal__body" onSubmit={handleContactSubmit}>
@@ -892,7 +778,7 @@ function CustomersPage() {
         onConfirm={confirmState.onConfirm || handleConfirmCancel}
         onCancel={handleConfirmCancel}
       />
-      {toastMessage && <div className={`toast${toastVariant ? ` toast--${toastVariant}` : ''}`}>{toastMessage}</div>}
+      <Toast message={toastMessage} variant={toastVariant} />
     </>
   );
 }

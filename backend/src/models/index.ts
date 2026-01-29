@@ -66,12 +66,16 @@ async function defineModelFromTable(tableName: string, modelName: string) {
   const columns = await sequelize.getQueryInterface().describeTable(tableName);
   const attributes: Record<string, any> = {};
   Object.entries(columns).forEach(([name, column]) => {
+    let defaultValue = column.defaultValue;
+    if (typeof defaultValue === 'string' && defaultValue.toUpperCase().includes('CURRENT_TIMESTAMP')) {
+      defaultValue = Sequelize.literal('CURRENT_TIMESTAMP');
+    }
     attributes[name] = {
       type: mapColumnType(column.type as string),
       allowNull: column.allowNull,
       primaryKey: column.primaryKey,
       autoIncrement: column.autoIncrement,
-      defaultValue: column.defaultValue
+      defaultValue
     };
   });
   return sequelize.define(modelName, attributes, {

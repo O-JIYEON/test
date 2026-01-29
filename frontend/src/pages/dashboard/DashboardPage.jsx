@@ -1,8 +1,20 @@
 import ReactApexChart from 'react-apexcharts';
 import { useEffect, useMemo, useState } from 'react';
-import ConfirmDialog from '../../components/ConfirmDialog';
+import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
+import Toast from '../../components/feedback/Toast';
+import IconButton from '../../components/common/IconButton';
 import trashIcon from '../../assets/icon/trash.svg';
 import penLineIcon from '../../assets/icon/penLine.svg';
+import { fetchDeals, updateDeal, deleteDeal } from '../../api/deals.api';
+import { fetchLeads } from '../../api/leads.api';
+import { fetchActivityLogs } from '../../api/activities.api';
+import { fetchLookupValues } from '../../api/lookup.api';
+import { fetchGoals, upsertGoal, deleteGoal } from '../../api/goals.api';
+import dayjs, {
+  formatDate as formatDateValue,
+  parseDateOnly,
+  normalizeDateForCompare
+} from '../../utils/date';
 
 const useCountUp = (value, duration = 300) => {
   const [display, setDisplay] = useState(0);
@@ -152,19 +164,7 @@ function DashboardPage() {
     return `${Number(value).toLocaleString('ko-KR')}원`;
   };
 
-  const formatDate = (value) => {
-    if (!value) {
-      return '';
-    }
-    const text = String(value);
-    if (/^\\d{4}-\\d{2}-\\d{2}$/.test(text)) {
-      return text;
-    }
-    if (text.includes('T') || text.includes(' ')) {
-      return text.slice(0, 10);
-    }
-    return text.length >= 10 ? text.slice(0, 10) : text;
-  };
+  const formatDate = (value) => formatDateValue(value);
 
   const getStatus = (deal) => {
     if (deal.status) {
@@ -183,32 +183,23 @@ function DashboardPage() {
     if (!dateValue) {
       return null;
     }
-    const text = String(dateValue).slice(0, 10);
-    const [year, month] = text.split('-');
-    if (!year || !month) {
-      return null;
-    }
-    return `${year}-${month}`;
+    const parsed = parseDateOnly(dateValue);
+    return parsed ? parsed.format('YYYY-MM') : null;
   };
 
   const getYearLabel = (dateValue) => {
     if (!dateValue) {
       return null;
     }
-    const text = String(dateValue).slice(0, 10);
-    const [year] = text.split('-');
-    return year || null;
+    const parsed = parseDateOnly(dateValue);
+    return parsed ? parsed.format('YYYY') : null;
   };
 
   useEffect(() => {
     const loadDeals = async () => {
       try {
         setStatus('loading');
-        const response = await fetch(`http://${window.location.hostname}:5001/api/deals`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch deals');
-        }
+        const data = await fetchDeals();
         setDeals(data.deals || []);
         setStatus('ready');
       } catch (error) {
@@ -219,11 +210,7 @@ function DashboardPage() {
     loadDeals();
     const loadLeads = async () => {
       try {
-        const response = await fetch(`http://${window.location.hostname}:5001/api/leads`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch leads');
-        }
+        const data = await fetchLeads();
         setLeads(data.leads || []);
       } catch (error) {
         console.error(error);
@@ -231,11 +218,7 @@ function DashboardPage() {
     };
     const loadActivityLogs = async () => {
       try {
-        const response = await fetch(`http://${window.location.hostname}:5001/api/activity-logs`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch activity logs');
-        }
+        const data = await fetchActivityLogs();
         setActivityLogs(data.logs || []);
       } catch (error) {
         console.error(error);
@@ -243,11 +226,7 @@ function DashboardPage() {
     };
     const loadLookupValues = async () => {
       try {
-        const response = await fetch(`http://${window.location.hostname}:5001/api/lookup-values`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch lookup values');
-        }
+        const data = await fetchLookupValues();
         setLookupValues(data.values || []);
       } catch (error) {
         console.error(error);
@@ -255,11 +234,7 @@ function DashboardPage() {
     };
     const loadGoals = async () => {
       try {
-        const response = await fetch(`http://${window.location.hostname}:5001/api/goals`);
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch goals');
-        }
+        const data = await fetchGoals();
         setGoals(data.goals || []);
       } catch (error) {
         console.error(error);
@@ -419,15 +394,11 @@ function DashboardPage() {
   };
 
   const overviewRaw = useMemo(() => {
-    const now = new Date();
-    const currentYear = Number(now.getFullYear());
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const now = dayjs();
+    const currentYear = Number(now.year());
+    const currentMonth = now.format('YYYY-MM');
     const prevYear = String(currentYear - 1);
-    const prevMonth = (() => {
-      const year = now.getMonth() === 0 ? currentYear - 1 : currentYear;
-      const month = now.getMonth() === 0 ? 12 : now.getMonth();
-      return `${year}-${String(month).padStart(2, '0')}`;
-    })();
+    const prevMonth = now.subtract(1, 'month').format('YYYY-MM');
 
     const won = filteredDeals.reduce((sum, deal) => {
       if (getStatus(deal) !== '수주') {
@@ -519,9 +490,9 @@ function DashboardPage() {
   }, [filteredDeals, deals]);
 
   const currentPeriodKeys = useMemo(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const now = dayjs();
+    const year = now.format('YYYY');
+    const month = now.format('MM');
     return {
       yearStart: `${year}-01-01`,
       monthStart: `${year}-${month}-01`
@@ -611,8 +582,8 @@ function DashboardPage() {
         return statusValue !== '수주' && statusValue !== '실주' && statusValue !== '폐기';
       })
       .sort((a, b) => {
-        const aTime = new Date(a.created_at || a.updated_at || 0).getTime();
-        const bTime = new Date(b.created_at || b.updated_at || 0).getTime();
+        const aTime = dayjs(a.created_at || a.updated_at || 0).valueOf();
+        const bTime = dayjs(b.created_at || b.updated_at || 0).valueOf();
         return bTime - aTime;
       });
   }, [filteredDeals]);
@@ -765,9 +736,9 @@ function DashboardPage() {
   }, [lookupValues]);
 
   const groupedSummary = useMemo(() => {
-    const now = new Date();
-    const currentYear = String(now.getFullYear());
-    const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const now = dayjs();
+    const currentYear = now.format('YYYY');
+    const currentMonth = now.format('YYYY-MM');
     const useYear = periodMode === 'year';
     const keyForOwner = (owner) => owner || '미지정';
     const keyForDepartment = (owner) => {
@@ -867,12 +838,11 @@ function DashboardPage() {
   }, [groupedSummary, groupMode, ownerSummary, ownerDepartmentMap]);
 
   const buildOverviewStats = (dealList) => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const now = dayjs();
+    const currentYear = now.year();
+    const currentMonth = now.format('YYYY-MM');
     const prevYear = String(currentYear - 1);
-    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonth = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`;
+    const prevMonth = now.subtract(1, 'month').format('YYYY-MM');
 
     const won = dealList.reduce((sum, deal) => {
       if (getStatus(deal) !== '수주') {
@@ -1056,13 +1026,12 @@ function DashboardPage() {
         if (!lead?.created_at || !deal.created_at) {
           return null;
         }
-        const leadDate = new Date(String(lead.created_at));
-        const dealDate = new Date(String(deal.created_at));
-        if (Number.isNaN(leadDate.getTime()) || Number.isNaN(dealDate.getTime())) {
+        const leadDate = dayjs(lead.created_at);
+        const dealDate = dayjs(deal.created_at);
+        if (!leadDate.isValid() || !dealDate.isValid()) {
           return null;
         }
-        const diffTime = dealDate.getTime() - leadDate.getTime();
-        return Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+        return Math.max(0, Math.round(dealDate.diff(leadDate, 'day', true)));
       })
       .filter((value) => value !== null);
     const avgLeadDays = diffDays.length ? Math.round(diffDays.reduce((a, b) => a + b, 0) / diffDays.length) : null;
@@ -1100,13 +1069,12 @@ function DashboardPage() {
   );
 
   const summaryUpcomingDeals = useMemo(() => {
-    const today = new Date();
-    const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const base = normalizeDateForCompare(dayjs());
     const toDays = (value) => {
       if (!value) return null;
-      const date = new Date(String(value).slice(0, 10) + 'T00:00:00');
-      if (Number.isNaN(date.getTime())) return null;
-      return Math.ceil((date.getTime() - base.getTime()) / (1000 * 60 * 60 * 24));
+      const date = parseDateOnly(value);
+      if (!date) return null;
+      return Math.ceil(date.diff(base, 'day', true));
     };
     return summaryDeals
       .filter((deal) => !['수주', '실주'].includes(getStatus(deal)))
@@ -1254,20 +1222,9 @@ function DashboardPage() {
             ? String(formData.expected_amount).replace(/,/g, '')
             : formData.expected_amount
       };
-      const response = await fetch(`http://${window.location.hostname}:5001/api/deals/${editingDeal.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update deal');
-      }
-      const refreshed = await fetch(`http://${window.location.hostname}:5001/api/deals`);
-      const refreshedData = await refreshed.json();
-      if (refreshed.ok) {
-        setDeals(refreshedData.deals || []);
-      }
+      await updateDeal(editingDeal.id, payload);
+      const refreshedData = await fetchDeals();
+      setDeals(refreshedData.deals || []);
       setFormStatus('');
       setIsDealModalOpen(false);
       setEditingDeal(null);
@@ -1284,18 +1241,9 @@ function DashboardPage() {
       return;
     }
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/deals/${editingDeal.id}`, {
-        method: 'DELETE'
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete deal');
-      }
-      const refreshed = await fetch(`http://${window.location.hostname}:5001/api/deals`);
-      const refreshedData = await refreshed.json();
-      if (refreshed.ok) {
-        setDeals(refreshedData.deals || []);
-      }
+      await deleteDeal(editingDeal.id);
+      const refreshedData = await fetchDeals();
+      setDeals(refreshedData.deals || []);
       setIsDealModalOpen(false);
       setEditingDeal(null);
       setFormStatus('');
@@ -1511,20 +1459,9 @@ function DashboardPage() {
         period_start: goalTab === 'year' ? `${goalFormInput.period}-01-01` : `${goalFormInput.period}-01`,
         amount: goalFormInput.amount.replace(/[^\d]/g, '')
       };
-      const response = await fetch(`http://${window.location.hostname}:5001/api/goals`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save goals');
-      }
-      const refreshed = await fetch(`http://${window.location.hostname}:5001/api/goals`);
-      const refreshedData = await refreshed.json();
-      if (refreshed.ok) {
-        setGoals(refreshedData.goals || []);
-      }
+      await upsertGoal(payload);
+      const refreshedData = await fetchGoals();
+      setGoals(refreshedData.goals || []);
       setGoalFormMode('create');
       setIsGoalFormOpen(false);
       showToast('목표가 저장되었습니다.', 'success');
@@ -1536,18 +1473,9 @@ function DashboardPage() {
 
   const deleteGoal = async (id) => {
     try {
-      const response = await fetch(`http://${window.location.hostname}:5001/api/goals/${id}`, {
-        method: 'DELETE'
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete goal');
-      }
-      const refreshed = await fetch(`http://${window.location.hostname}:5001/api/goals`);
-      const refreshedData = await refreshed.json();
-      if (refreshed.ok) {
-        setGoals(refreshedData.goals || []);
-      }
+      await deleteGoal(id);
+      const refreshedData = await fetchGoals();
+      setGoals(refreshedData.goals || []);
       showToast('삭제되었습니다.', 'success');
     } catch (error) {
       console.error(error);
@@ -1839,12 +1767,12 @@ function DashboardPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>요약 상세</h3>
-                <button className="icon-button" type="button" onClick={() => setIsSummaryModalOpen(false)} aria-label="닫기">
+                <IconButton onClick={() => setIsSummaryModalOpen(false)} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <div className="modal__body dashboard-summary-modal__body">
@@ -2050,12 +1978,12 @@ function DashboardPage() {
               <button type="button" className="goal-modal__submit" onClick={openGoalFormModal}>
                 등록
               </button>
-              <button className="icon-button" type="button" onClick={() => setIsGoalModalOpen(false)} aria-label="닫기">
+              <IconButton onClick={() => setIsGoalModalOpen(false)} aria-label="닫기">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                   <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                 </svg>
-              </button>
+              </IconButton>
             </div>
             <div className="modal__body">
               <div className="goal-modal__list">
@@ -2105,12 +2033,12 @@ function DashboardPage() {
           <div className="modal__content modal__content--white goal-modal goal-modal--compact" role="dialog" aria-modal="true">
             <div className="modal__header">
               <h3>목표 등록</h3>
-              <button className="icon-button" type="button" onClick={() => setIsGoalFormOpen(false)} aria-label="닫기">
+              <IconButton onClick={() => setIsGoalFormOpen(false)} aria-label="닫기">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                   <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                 </svg>
-              </button>
+              </IconButton>
             </div>
             <div className="modal__body">
               <div className="goal-modal__grid">
@@ -2150,12 +2078,12 @@ function DashboardPage() {
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
                 <h3>딜 수정</h3>
-                <button className="icon-button" type="button" onClick={() => setIsDealModalOpen(false)} aria-label="닫기">
+                <IconButton onClick={() => setIsDealModalOpen(false)} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
                     <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
             </div>
             <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
@@ -2348,7 +2276,7 @@ function DashboardPage() {
         onConfirm={confirmState.onConfirm || (() => setConfirmState({ open: false, message: '', onConfirm: null }))}
         onCancel={() => setConfirmState({ open: false, message: '', onConfirm: null })}
       />
-      {toastMessage && <div className={`toast toast--${toastType}`}>{toastMessage}</div>}
+      <Toast message={toastMessage} variant={toastType} />
     </>
   );
 }
