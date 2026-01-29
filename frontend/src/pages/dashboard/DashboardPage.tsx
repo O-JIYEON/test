@@ -106,8 +106,7 @@ function DashboardPage() {
       '요구사항/기술검토': 25,
       '제안/견적': 50,
       '협상/계약': 75,
-      수주: 100,
-      실주: 0
+      수주: 100
     };
   }, [lookupValues]);
 
@@ -118,8 +117,8 @@ function DashboardPage() {
       .map((value) => value.label)
       .filter(Boolean);
     return stages.length
-      ? stages
-      : ['자격확인(가능성판단)', '요구사항/기술검토', '제안/견적', '협상/계약', '수주', '실주'];
+      ? stages.filter((stage) => stage !== '실주')
+      : ['자격확인(가능성판단)', '요구사항/기술검토', '제안/견적', '협상/계약', '수주'];
   }, [lookupValues]);
 
   const lossReasonOptions = ['가격', '경쟁사', '일정', '기술부적합', '예산 없음', '내부우선순위 변경', '기타'];
@@ -1562,70 +1561,74 @@ function DashboardPage() {
             </div>
           </div>
 
-          <div className="dashboard__section">
-            <div className="dashboard__section-header">
-              <div className="dashboard__section-title">수주액</div>
+          <div className="dashboard__triple-section">
+            <div className="dashboard__triple-header">
+              <div />
               <div className="dashboard__period">
-                  <div className="dashboard__period-toggle" data-active-index={summaryPeriodMode === 'month' ? '1' : '0'}>
-                    <button
-                      type="button"
-                      className={`dashboard__period-btn${summaryPeriodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
-                      onClick={() => setSummaryPeriodMode('year')}
-                    >
-                      연도별
-                    </button>
-                    <button
-                      type="button"
-                      className={`dashboard__period-btn${summaryPeriodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
-                      onClick={() => setSummaryPeriodMode('month')}
-                    >
-                      월별
-                    </button>
-                  </div>
+                <div className="dashboard__period-toggle" data-active-index={summaryPeriodMode === 'month' ? '1' : '0'}>
+                  <button
+                    type="button"
+                    className={`dashboard__period-btn${summaryPeriodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
+                    onClick={() => setSummaryPeriodMode('year')}
+                  >
+                    연도별
+                  </button>
+                  <button
+                    type="button"
+                    className={`dashboard__period-btn${summaryPeriodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
+                    onClick={() => setSummaryPeriodMode('month')}
+                  >
+                    월별
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="dashboard__chart">
-              <div className="dashboard__chart-canvas">
-                {monthlyData.length === 0 ? (
-                  <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                ) : (
-                  <ReactApexChart options={monthlyOptions} series={monthlySeries} type="line" height={240} />
-                )}
+            <div className="dashboard__triple-row">
+              <div className="dashboard__section">
+                <div className="dashboard__section-header">
+                  <div className="dashboard__section-title">수주액</div>
+                </div>
+              <div className="dashboard__chart">
+                <div className="dashboard__chart-canvas">
+                  {monthlyData.length === 0 ? (
+                    <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                  ) : (
+                    <ReactApexChart options={monthlyOptions} series={monthlySeries} type="line" height={220} />
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="dashboard__bottom">
-            <div className="dashboard__section">
-              <div className="dashboard__section-header dashboard__section-header--split">
-                <div className="dashboard__section-title">PipeLine Analysis</div>
-                <div className="dashboard__section-title">상태별 건수</div>
               </div>
-                <div className="dashboard__pipeline-row">
-                  <div className="dashboard__pipeline">
-                    <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
-                      {pipelineSeries[0]?.data?.every((value) => !value) ? (
-                        <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                      ) : (
+              <div className="dashboard__section">
+                <div className="dashboard__section-header">
+                  <div className="dashboard__section-title">PipeLine Analysis</div>
+                </div>
+                <div className="dashboard__pipeline">
+                  <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
+                    {pipelineSeries[0]?.data?.every((value) => !value) ? (
+                      <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                    ) : (
                         <ReactApexChart
                           key={`pipeline-${theme}-${pipelineStages.join('-')}`}
                           options={pipelineOptions}
                           series={pipelineSeries}
                           type="bar"
-                          height={200}
+                          height={220}
                         />
-                      )}
-                    </div>
+                    )}
                   </div>
-                <div className="dashboard__pipeline-stats-wrapper">
-                  <div className="dashboard__pipeline-stats">
-                    <div className="dashboard__pipeline-stats-chart">
-                      {statusTrend.categories.length === 0 ? (
-                        <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                      ) : (
-                        <ReactApexChart options={pipelineStatusOptions} series={statusTrend.series} type="bar" height={200} />
-                      )}
-                    </div>
+                </div>
+              </div>
+              <div className="dashboard__section">
+                <div className="dashboard__section-header">
+                  <div className="dashboard__section-title">상태별 건수</div>
+                </div>
+                <div className="dashboard__pipeline-stats">
+                  <div className="dashboard__pipeline-stats-chart">
+                    {statusTrend.categories.length === 0 ? (
+                      <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                    ) : (
+                    <ReactApexChart options={pipelineStatusOptions} series={statusTrend.series} type="bar" height={220} />
+                    )}
                   </div>
                 </div>
               </div>

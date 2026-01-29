@@ -609,10 +609,15 @@ html[data-theme='dark'] .dashboard__overview-goal:hover {
   padding: 16px;
   background: #fff;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  height: 280px;
+  max-height: 280px;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard__chart-canvas {
-  height: 240px;
+  height: 220px;
+  max-height: 220px;
 }
 
 .dashboard__deal-nowrap {
@@ -620,32 +625,53 @@ html[data-theme='dark'] .dashboard__overview-goal:hover {
 }
 
 
-.dashboard__bottom {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
 .dashboard__deal-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
   gap: 16px;
 }
 
-.dashboard__pipeline-row {
+.dashboard__triple-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
+}
+
+.dashboard__triple-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.dashboard__triple-section .dashboard__section-title {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard__triple-row .dashboard__chart,
+.dashboard__triple-row .dashboard__pipeline,
+.dashboard__triple-row .dashboard__pipeline-stats {
+  min-height: 280px;
+  height: 280px;
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard__pipeline {
   border: 1px solid rgba(148, 163, 184, 0.25);
   border-radius: 16px;
   padding: 16px;
-  min-height: 260px;
   background: #fff;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  height: 280px;
 }
 
 .dashboard__pipeline-stats {
@@ -654,16 +680,18 @@ html[data-theme='dark'] .dashboard__overview-goal:hover {
   padding: 16px;
   background: #fff;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-  min-height: 260px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: stretch;
   gap: 12px;
+  height: 280px;
 }
 
 .dashboard__pipeline-stats-chart {
   flex: 1;
+  min-height: 0;
+  max-height: 220px;
 }
 
 .dashboard__pipeline-stats-wrapper {
@@ -953,7 +981,7 @@ html[data-theme='dark'] .dashboard__pipeline-chart .apexcharts-data-labels text 
 
 .dashboard__pipeline-visual {
   width: 100%;
-  height: 200px;
+  height: 220px;
   border-radius: 10px;
 }
 
