@@ -1,73 +1,18 @@
 import express from 'express';
-import mysql from 'mysql2/promise';
+import dayjs from 'dayjs';
+import getConnection from './db/connection.js';
+import dbConfig from './db/config.js';
+import corsMiddleware from './middlewares/cors.js';
+import { normalizeDateValue, normalizeNumberValue, normalizeIdValue } from './utils/normalize.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(express.json());
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-const allowAnyOrigin = process.env.NODE_ENV !== 'production' && allowedOrigins.length === 0;
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (!origin) {
-    next();
-    return;
-  }
-  if (allowAnyOrigin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(204);
-    return;
-  }
-  next();
-});
-
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'java',
-  password: process.env.DB_PASSWORD || '0000',
-  database: process.env.DB_NAME || 'test',
-  timezone: 'Z'
-};
-
-function normalizeDateValue(value) {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-  const text = String(value);
-  return text.includes('T') ? text.split('T')[0] : text;
-}
-
-function normalizeNumberValue(value) {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-  const numeric = String(value).replace(/[^\d.-]/g, '');
-  if (numeric === '' || Number.isNaN(Number(numeric))) {
-    return null;
-  }
-  return Number(numeric);
-}
-
-function normalizeIdValue(value) {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-  return value;
-}
+app.use(corsMiddleware);
 
 async function getUserColumns() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = await getConnection();
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
@@ -88,7 +33,7 @@ async function getUsers(req, res) {
   let connection;
 
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [rows] = await connection.query('SELECT * FROM `user` ORDER BY id DESC');
     res.json({ users: rows });
   } catch (error) {
@@ -131,7 +76,7 @@ async function createUser(req, res) {
     const placeholders = entries.map(() => '?').join(', ');
     const values = entries.map((entry) => entry.value);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `INSERT INTO \`user\` (${fieldNames}) VALUES (${placeholders})`,
       values
@@ -173,7 +118,7 @@ async function updateUser(req, res) {
     const values = entries.map((entry) => entry.value);
     values.push(id);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `UPDATE \`user\` SET ${sets} WHERE id = ?`,
       values
@@ -197,7 +142,7 @@ async function deleteUser(req, res) {
       res.status(400).json({ error: 'Missing user id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query('DELETE FROM `user` WHERE id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
@@ -211,7 +156,7 @@ async function deleteUser(req, res) {
 }
 
 async function getProjectColumns() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = await getConnection();
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
@@ -229,7 +174,7 @@ async function getProjectColumns() {
 }
 
 async function getCustomersColumns() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = await getConnection();
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
@@ -247,7 +192,7 @@ async function getCustomersColumns() {
 }
 
 async function getCustomerContactColumns() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = await getConnection();
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
@@ -265,7 +210,7 @@ async function getCustomerContactColumns() {
 }
 
 async function getLookupCategoryColumns() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = await getConnection();
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
@@ -283,7 +228,7 @@ async function getLookupCategoryColumns() {
 }
 
 async function getLookupValueColumns() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = await getConnection();
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
@@ -388,7 +333,7 @@ async function getDealLogPayload(connection, dealId) {
 }
 
 async function getLeadColumns() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = await getConnection();
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
@@ -446,10 +391,10 @@ async function ensureDealForLead(connection, lead) {
   const [dealRows] = await connection.query('SELECT created_at FROM `deal` WHERE id = ?', [
     result.insertId
   ]);
-  const createdAt = dealRows[0]?.created_at || new Date();
-  const kstDate = new Date(new Date(createdAt).getTime() + 9 * 60 * 60 * 1000);
-  const kstDateKey = kstDate.toISOString().slice(0, 10).replace(/-/g, '');
-  const seq = await getNextDailySequence(connection, 'deal', 'deal_code', '-D', kstDate);
+  const createdAt = dealRows[0]?.created_at ?? dayjs().toDate();
+  const kstDate = dayjs(createdAt).add(9, 'hour');
+  const kstDateKey = kstDate.format('YYYYMMDD');
+  const seq = await getNextDailySequence(connection, 'deal', 'deal_code', '-D', kstDate.toDate());
   await connection.query(
     `UPDATE \`deal\`
      SET deal_code = CONCAT(?, '-D', ?)
@@ -464,7 +409,7 @@ async function ensureDealForLead(connection, lead) {
 }
 
 async function getDealColumns() {
-  const connection = await mysql.createConnection(dbConfig);
+  const connection = await getConnection();
   try {
     const [rows] = await connection.query(
       `SELECT COLUMN_NAME AS name, EXTRA AS extra
@@ -485,7 +430,7 @@ async function getProjects(req, res) {
   let connection;
 
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [rows] = await connection.query('SELECT * FROM `project` ORDER BY id DESC');
     res.json({ projects: rows });
   } catch (error) {
@@ -539,7 +484,7 @@ async function createProject(req, res) {
       return value;
     });
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `INSERT INTO \`project\` (${fieldNames}) VALUES (${placeholders})`,
       normalizedValues
@@ -589,7 +534,7 @@ async function updateProject(req, res) {
     });
     values.push(id);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `UPDATE \`project\` SET ${sets} WHERE id = ?`,
       values
@@ -613,7 +558,7 @@ async function deleteProject(req, res) {
       res.status(400).json({ error: 'Missing project id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query('DELETE FROM `project` WHERE id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
@@ -629,7 +574,7 @@ async function deleteProject(req, res) {
 async function getDeals(req, res) {
   let connection;
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [rows] = await connection.query(
       `SELECT
         deal.id,
@@ -718,7 +663,7 @@ async function createDeal(req, res) {
       return entry.value;
     });
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     await connection.beginTransaction();
     const [result] = await connection.query(
       `INSERT INTO \`deal\` (${fieldNames}) VALUES (${placeholders})`,
@@ -727,10 +672,10 @@ async function createDeal(req, res) {
   const [dealRows] = await connection.query('SELECT created_at FROM `deal` WHERE id = ?', [
     result.insertId
   ]);
-  const createdAt = dealRows[0]?.created_at || new Date();
-  const kstDate = new Date(new Date(createdAt).getTime() + 9 * 60 * 60 * 1000);
-  const kstDateKey = kstDate.toISOString().slice(0, 10).replace(/-/g, '');
-  const seq = await getNextDailySequence(connection, 'deal', 'deal_code', '-D', kstDate);
+  const createdAt = dealRows[0]?.created_at ?? dayjs().toDate();
+  const kstDate = dayjs(createdAt).add(9, 'hour');
+  const kstDateKey = kstDate.format('YYYYMMDD');
+  const seq = await getNextDailySequence(connection, 'deal', 'deal_code', '-D', kstDate.toDate());
   await connection.query(
     `UPDATE \`deal\`
       SET deal_code = CONCAT(?, '-D', ?)
@@ -798,7 +743,7 @@ async function updateDeal(req, res) {
     });
     values.push(id);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     let previousStage = null;
     const stageIndex = columnNames.indexOf('stage');
     if (stageIndex !== -1) {
@@ -838,7 +783,7 @@ async function deleteDeal(req, res) {
       res.status(400).json({ error: 'Missing deal id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const dealLogPayload = await getDealLogPayload(connection, id);
     if (dealLogPayload) {
       await createActivityLog(connection, dealLogPayload);
@@ -862,7 +807,7 @@ async function deleteDeal(req, res) {
 async function getCustomers(req, res) {
   let connection;
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [rows] = await connection.query(
       `SELECT
         customers.*,
@@ -929,7 +874,7 @@ async function createCustomers(req, res) {
 
     const brnEntry = entries.find((entry) => entry.name === 'business_registration_number');
     if (brnEntry?.value) {
-      connection = await mysql.createConnection(dbConfig);
+      connection = await getConnection();
       const [existing] = await connection.query(
         'SELECT id FROM `customers` WHERE business_registration_number = ? LIMIT 1',
         [brnEntry.value]
@@ -946,7 +891,7 @@ async function createCustomers(req, res) {
     const placeholders = entries.map(() => '?').join(', ');
     const values = entries.map((entry) => entry.value);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `INSERT INTO \`customers\` (${fieldNames}) VALUES (${placeholders})`,
       values
@@ -994,7 +939,7 @@ async function updateCustomers(req, res) {
     const values = entries.map((entry) => entry.value);
     values.push(id);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `UPDATE \`customers\` SET ${sets} WHERE id = ?`,
       values
@@ -1018,7 +963,7 @@ async function deleteCustomers(req, res) {
       res.status(400).json({ error: 'Missing customers id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query('DELETE FROM `customers` WHERE id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
@@ -1035,7 +980,7 @@ async function getCustomerContacts(req, res) {
   let connection;
   try {
     const { customer_id: customerId } = req.query;
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     if (customerId) {
       const [rows] = await connection.query(
         'SELECT * FROM `customer_contacts` WHERE customer_id = ? ORDER BY id DESC',
@@ -1085,7 +1030,7 @@ async function createCustomerContact(req, res) {
     const placeholders = entries.map(() => '?').join(', ');
     const values = entries.map((entry) => entry.value);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `INSERT INTO \`customer_contacts\` (${fieldNames}) VALUES (${placeholders})`,
       values
@@ -1133,7 +1078,7 @@ async function updateCustomerContact(req, res) {
     const values = entries.map((entry) => entry.value);
     values.push(id);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `UPDATE \`customer_contacts\` SET ${sets} WHERE id = ?`,
       values
@@ -1157,7 +1102,7 @@ async function deleteCustomerContact(req, res) {
       res.status(400).json({ error: 'Missing contact id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query('DELETE FROM `customer_contacts` WHERE id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
@@ -1173,7 +1118,7 @@ async function deleteCustomerContact(req, res) {
 async function getLookupCategories(req, res) {
   let connection;
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [rows] = await connection.query(
       `SELECT
         id,
@@ -1216,7 +1161,7 @@ async function createLookupCategory(req, res) {
     const placeholders = entries.map(() => '?').join(', ');
     const values = entries.map((entry) => entry.value);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `INSERT INTO \`lookup_categories\` (${fieldNames}) VALUES (${placeholders})`,
       values
@@ -1259,7 +1204,7 @@ async function updateLookupCategory(req, res) {
     const values = updates.map((entry) => entry.value);
     values.push(id);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `UPDATE \`lookup_categories\` SET ${setClause} WHERE id = ?`,
       values
@@ -1283,7 +1228,7 @@ async function deleteLookupCategory(req, res) {
       res.status(400).json({ error: 'Missing category id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query('DELETE FROM `lookup_categories` WHERE id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
@@ -1300,7 +1245,7 @@ async function getLookupValues(req, res) {
   let connection;
   try {
     const { category_id } = req.query;
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const conditions = [];
     const params = [];
 
@@ -1359,7 +1304,7 @@ async function createLookupValue(req, res) {
     const placeholders = entries.map(() => '?').join(', ');
     const values = entries.map((entry) => entry.value);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `INSERT INTO \`lookup_values\` (${fieldNames}) VALUES (${placeholders})`,
       values
@@ -1402,7 +1347,7 @@ async function updateLookupValue(req, res) {
     const values = updates.map((entry) => entry.value);
     values.push(id);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query(
       `UPDATE \`lookup_values\` SET ${setClause} WHERE id = ?`,
       values
@@ -1426,7 +1371,7 @@ async function deleteLookupValue(req, res) {
       res.status(400).json({ error: 'Missing value id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query('DELETE FROM `lookup_values` WHERE id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
@@ -1442,7 +1387,7 @@ async function deleteLookupValue(req, res) {
 async function getActivityLogs(req, res) {
   let connection;
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [rows] = await connection.query(
       `SELECT
         activity_logs.id,
@@ -1480,7 +1425,7 @@ async function getActivityLogs(req, res) {
 async function getLeads(req, res) {
   let connection;
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [rows] = await connection.query(
       `SELECT
         lead.id,
@@ -1567,7 +1512,7 @@ async function createLead(req, res) {
       return entry.value;
     });
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     await connection.beginTransaction();
     const [result] = await connection.query(
       `INSERT INTO \`lead\` (${fieldNames}) VALUES (${placeholders})`,
@@ -1577,11 +1522,11 @@ async function createLead(req, res) {
       result.insertId
     ]);
     const leadRow = leadRows[0];
-    const baseCreatedAt = leadRow?.created_at || new Date();
-    const createdDate = new Date(baseCreatedAt);
-    const kstDate = new Date(createdDate.getTime() + 9 * 60 * 60 * 1000);
-    const kstDateKey = kstDate.toISOString().slice(0, 10).replace(/-/g, '');
-    const seq = await getNextDailySequence(connection, 'lead', 'lead_code', '-L', kstDate);
+    const baseCreatedAt = leadRow?.created_at ?? dayjs().toDate();
+    const createdDate = dayjs(baseCreatedAt);
+    const kstDate = createdDate.add(9, 'hour');
+    const kstDateKey = kstDate.format('YYYYMMDD');
+    const seq = await getNextDailySequence(connection, 'lead', 'lead_code', '-L', kstDate.toDate());
     await connection.query(
       `UPDATE \`lead\`
        SET lead_code = CONCAT(?, '-L', ?)
@@ -1646,7 +1591,7 @@ async function updateLead(req, res) {
     });
     values.push(id);
 
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     await connection.beginTransaction();
     const [result] = await connection.query(`UPDATE \`lead\` SET ${sets} WHERE id = ?`, values);
     const [leadRows] = await connection.query('SELECT * FROM `lead` WHERE id = ?', [id]);
@@ -1683,7 +1628,7 @@ async function deleteLead(req, res) {
       res.status(400).json({ error: 'Missing lead id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const leadLogPayload = await getLeadLogPayload(connection, id);
     if (leadLogPayload) {
       await createActivityLog(connection, leadLogPayload);
@@ -1705,7 +1650,7 @@ async function deleteLead(req, res) {
 async function getGoals(req, res) {
   let connection;
   try {
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [rows] = await connection.query(
       'SELECT id, period_type, period_start, amount, created_at, updated_at FROM `goals` ORDER BY period_start DESC'
     );
@@ -1729,7 +1674,7 @@ async function upsertGoal(req, res) {
       return;
     }
     const normalizedAmount = normalizeNumberValue(amount);
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     await connection.query(
       `INSERT INTO \`goals\` (period_type, period_start, amount)
        VALUES (?, ?, ?)
@@ -1755,7 +1700,7 @@ async function deleteGoal(req, res) {
       res.status(400).json({ error: 'Missing goal id' });
       return;
     }
-    connection = await mysql.createConnection(dbConfig);
+    connection = await getConnection();
     const [result] = await connection.query('DELETE FROM `goals` WHERE id = ?', [id]);
     res.json({ deleted: result.affectedRows });
   } catch (error) {
