@@ -659,8 +659,8 @@ html[data-theme='dark'] .dashboard__overview-goal:hover {
 .dashboard__triple-row .dashboard__chart,
 .dashboard__triple-row .dashboard__pipeline,
 .dashboard__triple-row .dashboard__pipeline-stats {
-  min-height: 280px;
-  height: 280px;
+  min-height: 250px;
+  height: 250px;
   display: flex;
   flex-direction: column;
 }
@@ -991,6 +991,11 @@ html[data-theme='dark'] .dashboard__pipeline-chart .apexcharts-data-labels text 
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.dashboard__pipeline-chart .apexcharts-canvas,
+.dashboard__pipeline-chart .apexcharts-svg {
+  width: 100% !important;
 }
 
 .dashboard__table {

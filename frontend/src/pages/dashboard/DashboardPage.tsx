@@ -1,4 +1,5 @@
 import ReactApexChart from 'react-apexcharts';
+import ApexCharts from 'apexcharts';
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
@@ -1290,13 +1291,16 @@ function DashboardPage() {
   const pipelineOptions = useMemo(
     () => ({
     chart: {
+      id: 'pipeline-chart',
       type: 'bar',
       toolbar: { show: false },
       width: '100%'
     },
     colors: pipelineColors,
     stroke: { colors: ['transparent'] },
-    dataLabels: { enabled: false },
+    dataLabels: {
+      enabled: false
+    },
     legend: {
       show: false
     },
@@ -1322,12 +1326,15 @@ function DashboardPage() {
     yaxis: {
       labels: {
         show: true,
+        offsetX: 0,
+        minWidth: 110,
+        maxWidth: 140,
         style: { colors: theme === 'dark' ? '#e2e8f0' : '#64748b' }
       }
     },
     grid: {
       padding: {
-        left: 0,
+        left: 12,
         right: 10
       },
       borderColor: 'rgba(148, 163, 184, 0.15)'
@@ -1395,6 +1402,26 @@ function DashboardPage() {
       categories: summaryStatusTrend.categories
     }
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      ApexCharts.exec('pipeline-chart', 'updateOptions', pipelineOptions, false, true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [pipelineOptions]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [monthlySeries, pipelineSeries, statusTrend.series, summaryMonthlySeries, summaryStatusTrend.series, theme]);
 
   const openGoalModal = (tab = goalTab) => {
     setGoalTab(tab);
@@ -1612,7 +1639,7 @@ function DashboardPage() {
                           options={pipelineOptions}
                           series={pipelineSeries}
                           type="bar"
-                          height={220}
+                          height={200}
                         />
                     )}
                   </div>
