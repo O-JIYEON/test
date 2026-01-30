@@ -12,12 +12,9 @@
 *.sln
 *.sw?
 
-# frontend
-frontend/node_modules
-frontend/pnpm-lock.yaml
-
 # backend
-backend/node_modules
-backend/pnpm-lock.yaml
-backend/sql/migrate_*.sql
-backend/sql/seed_*.sql
+.env
+node_modules
+pnpm-lock.yaml
+sql/migrate_*.sql
+sql/seed_*.sql

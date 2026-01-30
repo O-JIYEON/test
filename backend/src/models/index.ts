@@ -2,8 +2,6 @@ import { DataTypes, Op, Sequelize } from 'sequelize';
 import sequelize from '../db/sequelize.js';
 
 const TABLES = {
-  user: 'User',
-  project: 'Project',
   customers: 'Customer',
   customer_contacts: 'CustomerContact',
   lead: 'Lead',

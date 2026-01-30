@@ -1,4 +1,5 @@
 import express from 'express';
+import 'dotenv/config';
 import corsMiddleware from './middlewares/cors.js';
 import healthRouter from './routes/health/index.js';
 import overviewRouter from './routes/overview/index.js';

@@ -14,6 +14,7 @@ export async function updateLead(req, res) {
     const payload = req.body || {};
     const entries = columns
       .map((col) => col.name)
+      .filter((name) => name !== 'lead_code')
       .filter((name) => Object.prototype.hasOwnProperty.call(payload, name))
       .map((name) => ({ name, value: payload[name] }));
 
