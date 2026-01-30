@@ -11,8 +11,8 @@ import {
 import { fetchLeads } from '../../api/leads.api';
 import { fetchActivityLogs } from '../../api/activities.api';
 import { fetchLookupValues } from '../../api/lookup.api';
-import Pagination from '../../components/common/Pagination';
-import IconButton from '../../components/common/IconButton';
+import Pagination from '../../components/common/pagination';
+import IconButton from '../../components/common/iconButton';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
 import './deals.css';

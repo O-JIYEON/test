@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchActivityLogs } from '../../api/activities.api';
-import Pagination from '../../components/common/Pagination';
+import Pagination from '../../components/common/pagination';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
 import { formatKstDateTime } from '../../utils/date';

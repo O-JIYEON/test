@@ -13,8 +13,8 @@ import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
-import Pagination from '../../components/common/Pagination';
-import IconButton from '../../components/common/IconButton';
+import Pagination from '../../components/common/pagination';
+import IconButton from '../../components/common/iconButton';
 import { formatKstDate, formatKstDateTime } from '../../utils/date';
 import './customers.css';
 

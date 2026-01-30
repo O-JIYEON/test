@@ -50,10 +50,10 @@
   background: rgba(15, 23, 42, 0.6);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  /* gap: 12px; */
   height: 100%;
   min-height: 0;
-  padding: 24px;
+  /* padding: 24px; */
 }
 
 .deal-modal__logs-title {
@@ -66,7 +66,7 @@
   align-items: center;
   gap: 8px;
   justify-content: space-between;
-  padding: 0;
+  padding: 24px;
 }
 
 .help-badge {
@@ -113,7 +113,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0;
+  padding: 0 24px 24px;
 }
 
 .deal-modal__log-item {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
-import IconButton from '../../components/common/IconButton';
+import IconButton from '../../components/common/iconButton';
 import Toast from '../../components/feedback/Toast';
 import './settings.css';
 import {
