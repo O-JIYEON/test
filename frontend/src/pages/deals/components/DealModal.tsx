@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import IconButton from '../../../components/common/IconButton';
 import xIcon from '../../../assets/icon/x.svg';
 
@@ -23,6 +23,7 @@ type DealModalProps = {
   handleDelete: () => void;
   applyLogToForm: (log: any) => void;
   formatDate: (value: any) => string;
+  formatDateTime: (value: any) => string;
   formatAmount: (value: any) => string;
 };
 
@@ -47,11 +48,89 @@ function DealModal({
   handleDelete,
   applyLogToForm,
   formatDate,
+  formatDateTime,
   formatAmount
 }: DealModalProps) {
   if (!isOpen) {
     return null;
   }
+
+  const logFields = useMemo(
+    () => [
+      { key: 'project_name', label: '프로젝트명', format: (value: any) => value || '-' },
+      { key: 'manager', label: '담당자', format: (value: any) => value || '-' },
+      { key: 'sales_owner', label: '담당자(영업)', format: (value: any) => value || '-' },
+      { key: 'deal_stage', label: '딜단계', format: (value: any) => value || '-' },
+      {
+        key: 'expected_amount',
+        label: '예상금액',
+        format: (value: any) => formatAmount(value) || '-'
+      },
+      {
+        key: 'next_action_date',
+        label: '다음액션일',
+        format: (value: any) => formatDate(value) || '-'
+      },
+      {
+        key: 'next_action_content',
+        label: '다음액션내용',
+        format: (value: any) => value || '-'
+      }
+    ],
+    [formatAmount, formatDate]
+  );
+
+  const groupedLogs = useMemo(() => {
+    const groups: Array<{
+      date: string;
+      items: Array<{
+        id: number | string;
+        time: string;
+        isFirst: boolean;
+        changes: Array<{ key: string; label: string; value: string }>;
+      }>;
+    }> = [];
+    const groupMap = new Map<string, (typeof groups)[number]>();
+    let previousValues: Record<string, string> | null = null;
+
+    dealLogs.forEach((log, index) => {
+      const dateLabel = formatDate(log.activity_date) || '';
+      const dateTimeLabel = formatDateTime(log.activity_date) || '';
+      const timeLabel = dateTimeLabel.split(' ')[1] || dateTimeLabel;
+      const currentValues = logFields.map((field) => ({
+        key: field.key,
+        label: field.label,
+        value: field.format(log[field.key])
+      }));
+
+      const changes =
+        index === 0 || !previousValues
+          ? currentValues
+          : currentValues.filter((field) => previousValues?.[field.key] !== field.value);
+
+      if (!groupMap.has(dateLabel)) {
+        const group = { date: dateLabel, items: [] };
+        groupMap.set(dateLabel, group);
+        groups.push(group);
+      }
+
+      if (changes.length > 0) {
+        groupMap.get(dateLabel)?.items.push({
+          id: log.id,
+          time: timeLabel,
+          isFirst: index === 0,
+          changes
+        });
+      }
+
+      previousValues = currentValues.reduce<Record<string, string>>((acc, field) => {
+        acc[field.key] = field.value;
+        return acc;
+      }, {});
+    });
+
+    return groups.filter((group) => group.items.length > 0);
+  }, [dealLogs, formatDate, formatDateTime, logFields]);
 
   const logsListRef = useRef<HTMLDivElement | null>(null);
 
@@ -243,60 +322,52 @@ function DealModal({
             </div>
           {showLogPanel && (
             <div className="deal-modal__logs">
-              <div className="deal-modal__logs-header">
-                <h4 className="deal-modal__logs-title">활동기록</h4>
-                <span className="help-badge" aria-label="도움말">
-                  ?
-                  <span className="help-badge__tooltip">최신 기록은 하단에 표시됩니다.</span>
-                </span>
-              </div>
+            
               {dealLogs.length === 0 ? (
                 <p className="table__status">기록이 없습니다.</p>
               ) : (
                 <div className="deal-modal__logs-list" ref={logsListRef}>
-                  {dealLogs.map((log) => (
-                    <div
-                      className="deal-modal__log-item"
-                      key={log.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => applyLogToForm(log)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          applyLogToForm(log);
-                        }
-                      }}
-                    >
-                      <div className="deal-modal__log-header">
-                        <span className="deal-modal__log-date">{formatDate(log.activity_date)}</span>
-                        {log.deal_stage && (
-                          <span className="deal-modal__log-badge">{log.deal_stage}</span>
-                        )}
-                      </div>
-                      <div className="deal-modal__log-row">
-                        <span className="deal-modal__log-label">담당자</span>
-                        <span className="deal-modal__log-value">{log.manager || '-'}</span>
-                      </div>
-                      <div className="deal-modal__log-row">
-                        <span className="deal-modal__log-label">프로젝트명</span>
-                        <span className="deal-modal__log-value">{log.project_name || '-'}</span>
-                      </div>
-                      <div className="deal-modal__log-row">
-                        <span className="deal-modal__log-label">예상금액</span>
-                        <span className="deal-modal__log-value">{formatAmount(log.expected_amount) || '-'}</span>
-                      </div>
-                      <div className="deal-modal__log-row">
-                        <span className="deal-modal__log-label">다음액션일</span>
-                        <span className="deal-modal__log-value">{formatDate(log.next_action_date) || '-'}</span>
-                      </div>
-                      <div className="deal-modal__log-row">
-                        <span className="deal-modal__log-label">다음액션내용</span>
-                        <span className="deal-modal__log-value">{log.next_action_content || '-'}</span>
-                      </div>
-                      <div className="deal-modal__log-row">
-                        <span className="deal-modal__log-label">담당자(영업)</span>
-                        <span className="deal-modal__log-value">{log.sales_owner || '-'}</span>
+                  {groupedLogs.map((group) => (
+                    <div className="deal-modal__log-group" key={group.date}>
+                      <div className="deal-modal__log-date-label">{group.date}</div>
+                      <div className="deal-modal__log-group-body">
+                        {group.items.map((entry) => (
+                          <div
+                            className="deal-modal__log-entry"
+                            key={entry.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              const targetLog = dealLogs.find((log) => String(log.id) === String(entry.id));
+                              if (targetLog) {
+                                applyLogToForm(targetLog);
+                              }
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                const targetLog = dealLogs.find((log) => String(log.id) === String(entry.id));
+                                if (targetLog) {
+                                  applyLogToForm(targetLog);
+                                }
+                              }
+                            }}
+                          >
+                            <div className="deal-modal__log-time">
+                              {entry.time}
+                              {entry.isFirst ? ' (딜 생성)' : ''}
+                            </div>
+                            <div className="deal-modal__log-lines">
+                              {entry.changes.length > 0 &&
+                                entry.changes.map((field) => (
+                                  <div className="deal-modal__log-line" key={field.key}>
+                                    <span className="deal-modal__log-line-label">{field.label}</span>
+                                    <span className="deal-modal__log-line-value">{field.value}</span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}

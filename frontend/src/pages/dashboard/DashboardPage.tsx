@@ -1650,22 +1650,6 @@ function DashboardPage() {
             <div className="dashboard__triple-row">
               <div className="dashboard__section">
                 <div className="dashboard__section-header">
-                  <div className="dashboard__section-title">수주액</div>
-                </div>
-              <div className="dashboard__chart">
-                <div className="dashboard__chart-canvas">
-                  {loadingDeals ? (
-                    <Loading />
-                  ) : monthlyData.length === 0 ? (
-                    <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                  ) : (
-                    <ReactApexChart options={monthlyOptions} series={monthlySeries} type="line" height={220} />
-                  )}
-                </div>
-              </div>
-              </div>
-              <div className="dashboard__section">
-                <div className="dashboard__section-header">
                   <div className="dashboard__section-title">PipeLine Analysis</div>
                 </div>
                 <div className="dashboard__pipeline">
@@ -1685,6 +1669,22 @@ function DashboardPage() {
                     )}
                   </div>
                 </div>
+              </div>
+              <div className="dashboard__section">
+                <div className="dashboard__section-header">
+                  <div className="dashboard__section-title">수주액</div>
+                </div>
+              <div className="dashboard__chart">
+                <div className="dashboard__chart-canvas">
+                  {loadingDeals ? (
+                    <Loading />
+                  ) : monthlyData.length === 0 ? (
+                    <p className="table__status table__status--centered">데이터가 없습니다.</p>
+                  ) : (
+                    <ReactApexChart options={monthlyOptions} series={monthlySeries} type="line" height={220} />
+                  )}
+                </div>
+              </div>
               </div>
               <div className="dashboard__section">
                 <div className="dashboard__section-header">

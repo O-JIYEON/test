@@ -872,6 +872,7 @@ function DealsPage() {
         handleDelete={handleDelete}
         applyLogToForm={applyLogToForm}
         formatDate={formatDate}
+        formatDateTime={formatDateTime}
         formatAmount={formatAmount}
       />
       <ConfirmDialog
