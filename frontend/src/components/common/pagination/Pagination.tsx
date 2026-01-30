@@ -1,3 +1,5 @@
+import chevronLeftIcon from '../../../assets/icon/chevronLeft.svg';
+import chevronRightIcon from '../../../assets/icon/chevronRight.svg';
 import './pagination.css';
 
 function Pagination({ page, totalPages, onChange, variant = 'text' }) {
@@ -20,9 +22,7 @@ function Pagination({ page, totalPages, onChange, variant = 'text' }) {
         aria-label={isIcon ? '이전 페이지' : undefined}
       >
         {isIcon ? (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15.5 19l-7-7 7-7" fill="none" stroke="currentColor" strokeWidth="2" />
-          </svg>
+          <img src={chevronLeftIcon} alt="" aria-hidden="true" />
         ) : (
           '이전'
         )}
@@ -47,9 +47,7 @@ function Pagination({ page, totalPages, onChange, variant = 'text' }) {
         aria-label={isIcon ? '다음 페이지' : undefined}
       >
         {isIcon ? (
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M8.5 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2" />
-          </svg>
+          <img src={chevronRightIcon} alt="" aria-hidden="true" />
         ) : (
           '다음'
         )}

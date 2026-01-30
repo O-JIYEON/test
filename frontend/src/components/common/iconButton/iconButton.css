@@ -2,8 +2,11 @@
   border: none;
   background: #1f2937;
   color: var(--color-slate-200);
-  border-radius: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
   padding: 6px;
+  min-width: 32px;
+  min-height: 32px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -12,21 +15,26 @@
 }
 
 .icon-button svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   fill: currentColor;
 }
 
+.icon-button img {
+  width: 18px;
+  height: 18px;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
 .icon-button:hover {
-  background: var(--color-slate-700);
   transform: translateY(-1px);
 }
 
 .icon-button--danger {
-  background: rgba(248, 113, 113, 0.2);
   color: #fca5a5;
 }
 
 .icon-button--danger:hover {
-  background: rgba(248, 113, 113, 0.35);
+  color: #f87171;
 }

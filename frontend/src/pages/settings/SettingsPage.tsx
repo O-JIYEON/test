@@ -4,6 +4,7 @@ import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
 import CategoryModal from './components/CategoryModal';
 import ValueModal from './components/ValueModal';
+import trashIcon from '../../assets/icon/trash.svg';
 import './settings.css';
 import {
   fetchLookupCategories,
@@ -293,24 +294,7 @@ function SettingsPage() {
                                   }}
                                   aria-label="값 삭제"
                                 >
-                                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path
-                                      d="M6 7h12l-1 13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7z"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
+                                  <img src={trashIcon} alt="" aria-hidden="true" />
                                 </button>
                               </td>
                             );

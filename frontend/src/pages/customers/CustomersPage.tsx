@@ -17,6 +17,8 @@ import Pagination from '../../components/common/pagination';
 import IconButton from '../../components/common/IconButton';
 import CustomerModal from './components/CustomerModal';
 import ContactModal from './components/ContactModal';
+import penLineIcon from '../../assets/icon/penLine.svg';
+import trashIcon from '../../assets/icon/trash.svg';
 import { formatKstDate, formatKstDateTime } from '../../utils/date';
 import './customers.css';
 
@@ -485,24 +487,7 @@ function CustomersPage() {
                                   }}
                                   aria-label="고객사 수정"
                                 >
-                                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path
-                                      d="M4 20h4l11-11a2.1 2.1 0 0 0-3-3L5 17v3z"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M14 6l4 4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
+                                  <img src={penLineIcon} alt="" aria-hidden="true" />
                                 </IconButton>
                               </td>
                             );
@@ -610,32 +595,7 @@ function CustomersPage() {
                                   }}
                                   aria-label="담당자 삭제"
                                 >
-                                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path
-                                      d="M6 7h12l-1 13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7z"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M10 11v6M14 11v6"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
+                                  <img src={trashIcon} alt="" aria-hidden="true" />
                                 </IconButton>
                               </td>
                             );

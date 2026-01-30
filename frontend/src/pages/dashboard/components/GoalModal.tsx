@@ -1,4 +1,5 @@
 import IconButton from '../../../components/common/IconButton';
+import xIcon from '../../../assets/icon/x.svg';
 
 type GoalModalProps = {
   isOpen: boolean;
@@ -56,10 +57,7 @@ function GoalModal({
             등록
           </button>
           <IconButton onClick={closeModal} aria-label="닫기">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-              <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-            </svg>
+            <img src={xIcon} alt="" aria-hidden="true" />
           </IconButton>
         </div>
         <div className="modal__body">

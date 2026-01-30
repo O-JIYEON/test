@@ -6,6 +6,7 @@ import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
 import LeadModal from './components/LeadModal';
+import mailIcon from '../../assets/icon/mail.svg';
 import './leads.css';
 import {
   fetchLeads,
@@ -853,21 +854,7 @@ function LeadsPage() {
                                       showToast('이메일이 복사되었습니다.', 'success');
                                     }}
                                   >
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                                      <path
-                                        d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.6"
-                                      />
-                                      <path
-                                        d="M22 8 12 14 2 8"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="1.6"
-                                        strokeLinecap="round"
-                                      />
-                                    </svg>
+                                    <img src={mailIcon} alt="" aria-hidden="true" />
                                   </IconButton>
                                   <span className="email-tooltip">{email}</span>
                                 </span>

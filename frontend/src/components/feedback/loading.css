@@ -1,6 +1,7 @@
 .loading {
   width: 100%;
-  min-height: 180px;
+  padding: 24px;
+  /* min-height: 180px; */
   display: flex;
   flex-direction: column;
   align-items: center;

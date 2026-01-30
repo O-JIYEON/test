@@ -90,12 +90,15 @@
 .theme-toggle-icons {
   display: inline-flex;
   align-items: center;
-  margin-right: 8px;
   width: 24px;
   height: 24px;
   overflow: hidden;
   position: relative;
   color: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .theme-toggle-icon {
@@ -107,9 +110,17 @@
   transition: transform 0.25s ease, opacity 0.2s ease;
 }
 
-.theme-toggle-icon svg {
-  width: 20px;
-  height: 20px;
+.theme-toggle-icon img {
+  width: 30px;
+  height: 30px;
+}
+
+.theme-toggle-icon--sun img {
+  filter: brightness(0) saturate(100%) invert(46%) sepia(87%) saturate(2852%) hue-rotate(352deg) brightness(97%) contrast(102%);
+}
+
+.theme-toggle-icon--moon img {
+  filter: brightness(0) saturate(100%) invert(90%) sepia(44%) saturate(527%) hue-rotate(355deg) brightness(104%) contrast(97%);
 }
 
 html[data-theme='light'] .app-header {
