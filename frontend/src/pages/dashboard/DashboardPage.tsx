@@ -53,7 +53,11 @@ function DashboardPage() {
   const [lookupValues, setLookupValues] = useState([]);
   const [leads, setLeads] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
-  const [status, setStatus] = useState('loading');
+  const [loadingDeals, setLoadingDeals] = useState(true);
+  const [loadingLeads, setLoadingLeads] = useState(true);
+  const [loadingActivityLogs, setLoadingActivityLogs] = useState(true);
+  const [loadingLookupValues, setLoadingLookupValues] = useState(true);
+  const [loadingGoals, setLoadingGoals] = useState(true);
   const [editingDeal, setEditingDeal] = useState(null);
   const [formData, setFormData] = useState({});
   const [formStatus, setFormStatus] = useState('');
@@ -201,47 +205,59 @@ function DashboardPage() {
 
   useEffect(() => {
     const loadDeals = async () => {
+      setLoadingDeals(true);
       try {
-        setStatus('loading');
         const data = await fetchDeals();
         setDeals(data.deals || []);
-        setStatus('ready');
       } catch (error) {
         console.error(error);
-        setStatus('error');
+      } finally {
+        setLoadingDeals(false);
       }
     };
     loadDeals();
     const loadLeads = async () => {
+      setLoadingLeads(true);
       try {
         const data = await fetchLeads();
         setLeads(data.leads || []);
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingLeads(false);
       }
     };
     const loadActivityLogs = async () => {
+      setLoadingActivityLogs(true);
       try {
         const data = await fetchActivityLogs();
         setActivityLogs(data.logs || []);
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingActivityLogs(false);
       }
     };
     const loadLookupValues = async () => {
+      setLoadingLookupValues(true);
       try {
         const data = await fetchLookupValues();
         setLookupValues(data.values || []);
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingLookupValues(false);
       }
     };
     const loadGoals = async () => {
+      setLoadingGoals(true);
       try {
         const data = await fetchGoals();
         setGoals(data.goals || []);
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingGoals(false);
       }
     };
     loadLookupValues();
@@ -1548,63 +1564,63 @@ function DashboardPage() {
     <>
       <section className="content__section content__section--single">
         <div className="dashboard">
-          {status === 'loading' ? (
-            <Loading />
-          ) : (
-          <>
           <div className="dashboard__overview">
-            <div className="dashboard__overview-cards dashboard__overview-cards--hero">
-              {overviewStats.map((item) => (
-                <div className="dashboard__overview-card dashboard__overview-card--hero" key={item.label}>
-                  {item.goalType && (
-                    <button
-                      type="button"
-                      className="dashboard__overview-edit"
-                      onClick={() => openGoalModal(item.goalType)}
-                      data-tooltip="목표 금액 수정"
-                      aria-label={`${item.label} 목표 설정`}
-                    >
-                      <img src={penLineIcon} alt="" />
-                    </button>
-                  )}
-                  <div className="dashboard__overview-content">
-                    <span className="dashboard__overview-label">{item.label}</span>
-                    <strong className="dashboard__overview-value">
-                      {item.value}
-                      {item.label.includes('수주액') && <span className="dashboard__overview-unit">원</span>}
-                      {item.unit && item.value !== '-' && <span className="dashboard__overview-unit">{item.unit}</span>}
-                      {item.deltaValue !== undefined && item.deltaValue !== null && (
-                        <span
-                          className={`dashboard__overview-delta-inline ${item.deltaClass || ''}`}
-                          data-tooltip={item.deltaTooltip || ''}
-                        >
-                          ({Math.abs(item.deltaValue).toFixed(1)}% {item.deltaValue >= 0 ? '↑' : '↓'})
-                        </span>
-                      )}
-                    </strong>
+            {loadingDeals || loadingGoals || loadingLookupValues ? (
+              <Loading />
+            ) : (
+              <div className="dashboard__overview-cards dashboard__overview-cards--hero">
+                {overviewStats.map((item) => (
+                  <div className="dashboard__overview-card dashboard__overview-card--hero" key={item.label}>
                     {item.goalType && (
-                      <button type="button" className="dashboard__overview-goal" onClick={() => openGoalModal(item.goalType)}>
-                        목표 {item.goalValue === null ? '-' : formatAmount(item.goalValue)}
-                       
-                          {item.goalRate === null || item.goalRate === undefined
-                            ? ''
-                            : ` (${item.goalRate.toFixed(1)}%)`}
-                       
+                      <button
+                        type="button"
+                        className="dashboard__overview-edit"
+                        onClick={() => openGoalModal(item.goalType)}
+                        data-tooltip="목표 금액 수정"
+                        aria-label={`${item.label} 목표 설정`}
+                      >
+                        <img src={penLineIcon} alt="" />
                       </button>
                     )}
-                    {/* {item.delta && item.deltaValue === null && (
-                      <em className="dashboard__overview-delta">
-                        {item.deltaParts?.prefix === '-' ? '-' : item.deltaParts?.prefix || ''}
-                        <span className={`dashboard__overview-delta-text ${item.deltaClass || ''}`}>
-                          {item.deltaParts?.prefix === '-' ? '' : item.deltaParts?.trend || item.delta}
-                        </span>
-                        {item.deltaParts?.prefix === '-' ? '' : item.deltaParts?.suffix || ''}
-                      </em>
-                    )} */}
+                    <div className="dashboard__overview-content">
+                      <span className="dashboard__overview-label">{item.label}</span>
+                      <strong className="dashboard__overview-value">
+                        {item.value}
+                        {item.label.includes('수주액') && <span className="dashboard__overview-unit">원</span>}
+                        {item.unit && item.value !== '-' && <span className="dashboard__overview-unit">{item.unit}</span>}
+                        {item.deltaValue !== undefined && item.deltaValue !== null && (
+                          <span
+                            className={`dashboard__overview-delta-inline ${item.deltaClass || ''}`}
+                            data-tooltip={item.deltaTooltip || ''}
+                          >
+                            ({Math.abs(item.deltaValue).toFixed(1)}% {item.deltaValue >= 0 ? '↑' : '↓'})
+                          </span>
+                        )}
+                      </strong>
+                      {item.goalType && (
+                        <button type="button" className="dashboard__overview-goal" onClick={() => openGoalModal(item.goalType)}>
+                          목표 {item.goalValue === null ? '-' : formatAmount(item.goalValue)}
+                         
+                            {item.goalRate === null || item.goalRate === undefined
+                              ? ''
+                              : ` (${item.goalRate.toFixed(1)}%)`}
+                         
+                        </button>
+                      )}
+                      {/* {item.delta && item.deltaValue === null && (
+                        <em className="dashboard__overview-delta">
+                          {item.deltaParts?.prefix === '-' ? '-' : item.deltaParts?.prefix || ''}
+                          <span className={`dashboard__overview-delta-text ${item.deltaClass || ''}`}>
+                            {item.deltaParts?.prefix === '-' ? '' : item.deltaParts?.trend || item.delta}
+                          </span>
+                          {item.deltaParts?.prefix === '-' ? '' : item.deltaParts?.suffix || ''}
+                        </em>
+                      )} */}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="dashboard__triple-section">
@@ -1636,7 +1652,9 @@ function DashboardPage() {
                 </div>
               <div className="dashboard__chart">
                 <div className="dashboard__chart-canvas">
-                  {monthlyData.length === 0 ? (
+                  {loadingDeals ? (
+                    <Loading />
+                  ) : monthlyData.length === 0 ? (
                     <p className="table__status table__status--centered">데이터가 없습니다.</p>
                   ) : (
                     <ReactApexChart options={monthlyOptions} series={monthlySeries} type="line" height={220} />
@@ -1650,7 +1668,9 @@ function DashboardPage() {
                 </div>
                 <div className="dashboard__pipeline">
                   <div className="dashboard__pipeline-visual dashboard__pipeline-chart">
-                    {pipelineSeries[0]?.data?.every((value) => !value) ? (
+                    {loadingDeals || loadingLookupValues ? (
+                      <Loading />
+                    ) : pipelineSeries[0]?.data?.every((value) => !value) ? (
                       <p className="table__status table__status--centered">데이터가 없습니다.</p>
                     ) : (
                         <ReactApexChart
@@ -1670,7 +1690,9 @@ function DashboardPage() {
                 </div>
                 <div className="dashboard__pipeline-stats">
                   <div className="dashboard__pipeline-stats-chart">
-                    {statusTrend.categories.length === 0 ? (
+                    {loadingDeals || loadingLeads ? (
+                      <Loading />
+                    ) : statusTrend.categories.length === 0 ? (
                       <p className="table__status table__status--centered">데이터가 없습니다.</p>
                     ) : (
                     <ReactApexChart options={pipelineStatusOptions} series={statusTrend.series} type="bar" height={220} />
@@ -1704,42 +1726,57 @@ function DashboardPage() {
                 </div>
               </div>
               <div className="dashboard__table dashboard__table--scroll dashboard__table--summary">
-                <div className="table__wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        {groupMode === 'department' ? (
-                          <>
-                            <th>부서</th>
-                            <th>수주매출</th>
-                            <th>가중금액</th>
-                            <th>리드수</th>
-                            <th>딜수</th>
-                            <th>수주수</th>
-                          </>
-                        ) : (
-                          <>
-                            <th>부서</th>
-                            <th>담당자</th>
-                            <th>수주매출</th>
-                            <th>가중금액</th>
-                            <th>리드수</th>
-                            <th>딜수</th>
-                            <th>수주수</th>
-                          </>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {summaryRows.length === 0 && (
-                        <tr className="data-table__row data-table__row--empty">
-                          <td colSpan={groupMode === 'department' ? 6 : 7} className="data-table__empty">데이터가 없습니다.</td>
+                {loadingDeals || loadingLeads || loadingLookupValues ? (
+                  <Loading />
+                ) : (
+                  <div className="table__wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          {groupMode === 'department' ? (
+                            <>
+                              <th>부서</th>
+                              <th>수주매출</th>
+                              <th>가중금액</th>
+                              <th>리드수</th>
+                              <th>딜수</th>
+                              <th>수주수</th>
+                            </>
+                          ) : (
+                            <>
+                              <th>부서</th>
+                              <th>담당자</th>
+                              <th>수주매출</th>
+                              <th>가중금액</th>
+                              <th>리드수</th>
+                              <th>딜수</th>
+                              <th>수주수</th>
+                            </>
+                          )}
                         </tr>
-                      )}
-                      {summaryRows.map((row) => {
-                        if (groupMode === 'department') {
+                      </thead>
+                      <tbody>
+                        {summaryRows.length === 0 && (
+                          <tr className="data-table__row data-table__row--empty">
+                            <td colSpan={groupMode === 'department' ? 6 : 7} className="data-table__empty">데이터가 없습니다.</td>
+                          </tr>
+                        )}
+                        {summaryRows.map((row) => {
+                          if (groupMode === 'department') {
+                            return (
+                              <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
+                                <td>{row.key}</td>
+                                <td>{formatAmount(row.wonAmount)}</td>
+                                <td>{formatAmount(Math.round(row.weightedAmount))}</td>
+                                <td>{row.leadCount}</td>
+                                <td>{row.dealCount}</td>
+                                <td>{row.wonCount}</td>
+                              </tr>
+                            );
+                          }
                           return (
                             <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
+                              <td>{ownerDepartmentMap[row.key] || '미지정'}</td>
                               <td>{row.key}</td>
                               <td>{formatAmount(row.wonAmount)}</td>
                               <td>{formatAmount(Math.round(row.weightedAmount))}</td>
@@ -1748,22 +1785,11 @@ function DashboardPage() {
                               <td>{row.wonCount}</td>
                             </tr>
                           );
-                        }
-                        return (
-                          <tr key={row.key} className="data-table__row" onClick={() => openSummaryModal(row.key)}>
-                            <td>{ownerDepartmentMap[row.key] || '미지정'}</td>
-                            <td>{row.key}</td>
-                            <td>{formatAmount(row.wonAmount)}</td>
-                            <td>{formatAmount(Math.round(row.weightedAmount))}</td>
-                            <td>{row.leadCount}</td>
-                            <td>{row.dealCount}</td>
-                            <td>{row.wonCount}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
             <div className="dashboard__section">
@@ -1772,46 +1798,48 @@ function DashboardPage() {
                 <div className="dashboard__section-spacer" />
               </div>
               <div className="dashboard__table dashboard__table--scroll">
-                <div className="table__wrapper">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Deal ID</th>
-                        <th>회사명</th>
-                        <th>프로젝트/건명</th>
-                        <th>예상금액(원)</th>
-                        <th>확률</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentActiveDeals.length === 0 && (
-                        <tr className="data-table__row data-table__row--empty">
-                          <td colSpan={5} className="data-table__empty">데이터가 없습니다.</td>
+                {loadingDeals || loadingLookupValues ? (
+                  <Loading />
+                ) : (
+                  <div className="table__wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Deal ID</th>
+                          <th>회사명</th>
+                          <th>프로젝트/건명</th>
+                          <th>예상금액(원)</th>
+                          <th>확률</th>
                         </tr>
-                      )}
-                      {recentActiveDeals.map((deal) => (
-                        <tr
-                          key={deal.id}
-                          className="data-table__row"
-                          onClick={() => {
-                            openEditModal(deal);
-                          }}
-                        >
-                          <td>{deal.deal_code || deal.id}</td>
-                          <td className="dashboard__deal-nowrap">{deal.company || '-'}</td>
-                          <td>{deal.project_name || '-'}</td>
-                          <td className="dashboard__deal-nowrap">{formatAmount(parseAmount(deal.expected_amount))}</td>
-                          <td>{deal.stage ? `${probabilityByStage[deal.stage] ?? 0}%` : '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {recentActiveDeals.length === 0 && (
+                          <tr className="data-table__row data-table__row--empty">
+                            <td colSpan={5} className="data-table__empty">데이터가 없습니다.</td>
+                          </tr>
+                        )}
+                        {recentActiveDeals.map((deal) => (
+                          <tr
+                            key={deal.id}
+                            className="data-table__row"
+                            onClick={() => {
+                              openEditModal(deal);
+                            }}
+                          >
+                            <td>{deal.deal_code || deal.id}</td>
+                            <td className="dashboard__deal-nowrap">{deal.company || '-'}</td>
+                            <td>{deal.project_name || '-'}</td>
+                            <td className="dashboard__deal-nowrap">{formatAmount(parseAmount(deal.expected_amount))}</td>
+                            <td>{deal.stage ? `${probabilityByStage[deal.stage] ?? 0}%` : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-          </>
-          )}
         </div>
       </section>
       {isSummaryModalOpen && (
