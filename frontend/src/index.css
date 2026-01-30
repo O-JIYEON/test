@@ -1,12 +1,14 @@
+@import './assets/styles/colors.css';
+
 :root {
   font-family: 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
-  color: #e2e8f0;
-  background-color: #0a0f1e;
+  color: var(--color-slate-200);
+  background-color: var(--color-slate-950);
 }
 
 html[data-theme='light'] {
-  color: #0f172a;
-  background-color: #f8fafc;
+  color: var(--color-slate-900);
+  background-color: var(--color-slate-50);
 }
 
 * {
@@ -110,18 +112,18 @@ ul {
 
 .lead-status-summary__label {
   font-size: 0.72rem;
-  color: #94a3b8;
+  color: var(--color-slate-400);
   font-weight: 600;
 }
 
 .lead-status-summary__value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--color-slate-200);
 }
 
 .lead-status-summary__value--total {
-  color: #f8fafc;
+  color: var(--color-slate-50);
 }
 
 .lead-status-summary__value--new {
@@ -129,15 +131,15 @@ ul {
 }
 
 .lead-status-summary__value--contacting {
-  color: #fed7aa;
+  color: var(--color-amber-200);
 }
 
 .lead-status-summary__value--converted {
-  color: #bbf7d0;
+  color: var(--color-green-200);
 }
 
 .lead-status-summary__value--lost {
-  color: #fecaca;
+  color: var(--color-red-200);
 }
 
 .lead-status-summary__value--hold {
@@ -145,15 +147,15 @@ ul {
 }
 
 .lead-status-summary__value--progress {
-  color: #bae6fd;
+  color: var(--color-sky-200);
 }
 
 .lead-status-summary__value--won {
-  color: #22c55e;
+  color: var(--color-green-500);
 }
 
 .lead-status-summary__value--lost {
-  color: #fecaca;
+  color: var(--color-red-200);
 }
 
 .lead-status-summary__item--active {
@@ -165,11 +167,11 @@ html[data-theme='light'] .lead-status-summary__item--active {
 }
 
 html[data-theme='light'] .lead-status-summary__value--progress {
-  color: #2563eb;
+  color: var(--color-blue-600);
 }
 
 html[data-theme='light'] .lead-status-summary__value--won {
-  color: #15803d;
+  color: var(--color-green-600);
 }
 
 .filter-form .form-actions {
@@ -212,7 +214,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
   flex-direction: column;
   gap: 8px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--color-slate-200);
   position: relative;
 }
 
@@ -224,8 +226,8 @@ html[data-theme='light'] .lead-status-summary__value--won {
   width: 100%;
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.45);
-  background: #0b1120;
-  color: #e2e8f0;
+  background: var(--color-navy-950);
+  color: var(--color-slate-200);
   padding: 18px 14px 10px;
   font-size: 0.95rem;
   font-family: inherit;
@@ -238,7 +240,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
 .project-form textarea::placeholder,
 .project-form__field input::placeholder,
 .project-form__field textarea::placeholder {
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 .project-form__field select {
@@ -257,7 +259,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
   transform: translateY(-50%);
   padding: 0 6px;
   color: #9aa4b2;
-  background: #0b1120;
+  background: var(--color-navy-950);
   border-radius: 4px;
   transition: all 0.2s ease;
   pointer-events: none;
@@ -270,9 +272,9 @@ html[data-theme='light'] .lead-status-summary__value--won {
 .project-form__field textarea[readonly],
 .project-form__field textarea:disabled,
 .project-form__field select:disabled {
-  background: #1e293b;
+  background: var(--color-slate-800);
   border-color: rgba(125, 211, 252, 0.35);
-  color: #e2e8f0;
+  color: var(--color-slate-200);
   cursor: not-allowed;
 }
 
@@ -281,8 +283,8 @@ html[data-theme='light'] .lead-status-summary__value--won {
 .project-form__field textarea[readonly] + span,
 .project-form__field textarea:disabled + span,
 .project-form__field select:disabled + span {
-  background: #1e293b;
-  box-shadow: 0 0 0 2px #1e293b;
+  background: var(--color-slate-800);
+  box-shadow: 0 0 0 2px var(--color-slate-800);
   color: #9aa4b2;
 }
 
@@ -319,13 +321,13 @@ html[data-theme='light'] .lead-status-summary__value--won {
 
 .project-form input[type='date'],
 .project-form__field input[type='date'] {
-  color: #94a3b8;
+  color: var(--color-slate-400);
   color-scheme: dark;
 }
 
 .project-form input[type='date'][data-filled='true'],
 .project-form__field input[type='date'][data-filled='true'] {
-  color: #e2e8f0;
+  color: var(--color-slate-200);
 }
 
 .project-form input[type='date']::-webkit-datetime-edit,
@@ -338,7 +340,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
 .project-form__field input[type='date']::-webkit-datetime-edit-day-field,
 .project-form input[type='date']::-webkit-datetime-edit-year-field,
 .project-form__field input[type='date']::-webkit-datetime-edit-year-field {
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 .project-form input[type='date'][data-filled='true']::-webkit-datetime-edit,
@@ -351,7 +353,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
 .project-form__field input[type='date'][data-filled='true']::-webkit-datetime-edit-day-field,
 .project-form input[type='date'][data-filled='true']::-webkit-datetime-edit-year-field,
 .project-form__field input[type='date'][data-filled='true']::-webkit-datetime-edit-year-field {
-  color: #e2e8f0;
+  color: var(--color-slate-200);
 }
 
 .project-form input:focus,
@@ -370,7 +372,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
   border-radius: 10px;
   padding: 12px 24px;
   background: #1f2937;
-  color: #e2e8f0;
+  color: var(--color-slate-200);
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
@@ -383,20 +385,20 @@ html[data-theme='light'] .lead-status-summary__value--won {
 
 .project-form__submit:hover {
   transform: translateY(-1px);
-  background: #334155;
+  background: var(--color-slate-700);
   border-color: rgba(148, 163, 184, 0.8);
 }
 
 .project-form__submit--danger {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
+  background: var(--color-red-500);
+  color: var(--color-white);
+  border-color: var(--color-red-500);
   box-shadow: none;
 }
 
 .project-form__submit--danger:hover {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--color-red-600);
+  border-color: var(--color-red-600);
   box-shadow: 0 8px 16px rgba(239, 68, 68, 0.2);
 }
 
@@ -426,7 +428,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
 .form-actions__reset {
   border: none;
   background: transparent;
-  color: #94a3b8;
+  color: var(--color-slate-400);
   font-weight: 600;
   cursor: pointer;
 }
@@ -483,7 +485,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
 
 .data-table__empty {
   padding: 0;
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 .table-sort {
@@ -526,7 +528,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
   border: none;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
+  color: var(--color-slate-200);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -555,7 +557,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
 .table-link--disabled {
   cursor: default;
   text-decoration: none;
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 
@@ -574,7 +576,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
   padding: 6px 8px;
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.95);
-  color: #e2e8f0;
+  color: var(--color-slate-200);
   font-size: 0.75rem;
   white-space: nowrap;
   opacity: 0;
@@ -591,7 +593,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
 
 html[data-theme='light'] .email-tooltip {
   background: rgba(15, 23, 42, 0.9);
-  color: #f8fafc;
+  color: var(--color-slate-50);
 }
 
 
@@ -602,13 +604,13 @@ html[data-theme='light'] .email-tooltip {
 }
 
 .lead-dday--urgent {
-  color: #ef4444;
+  color: var(--color-red-500);
 }
 
 
 
 .data-table__row--disabled td {
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 .table-sort__icon {
@@ -618,7 +620,7 @@ html[data-theme='light'] .email-tooltip {
 
 .table__status {
   margin-top: 12px;
-  color: #94a3b8;
+  color: var(--color-slate-400);
   text-align: center;
   padding: 20px 12px;
 }
@@ -636,11 +638,11 @@ html[data-theme='light'] .email-tooltip {
 
 
 html[data-theme='light'] .lead-status-summary__label {
-  color: #64748b;
+  color: var(--color-slate-500);
 }
 
 html[data-theme='light'] .lead-status-summary__value {
-  color: #0f172a;
+  color: var(--color-slate-900);
 }
 
 
@@ -649,9 +651,9 @@ html[data-theme='light'] .project-form__field input:disabled,
 html[data-theme='light'] .project-form__field textarea[readonly],
 html[data-theme='light'] .project-form__field textarea:disabled,
 html[data-theme='light'] .project-form__field select:disabled {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #0f172a;
+  background: var(--color-slate-100);
+  border-color: var(--color-slate-400);
+  color: var(--color-slate-900);
 }
 
 html[data-theme='light'] .project-form__field input[readonly] + span,
@@ -659,12 +661,12 @@ html[data-theme='light'] .project-form__field input:disabled + span,
 html[data-theme='light'] .project-form__field textarea[readonly] + span,
 html[data-theme='light'] .project-form__field textarea:disabled + span,
 html[data-theme='light'] .project-form__field select:disabled + span {
-  background: #ffffff;
-  box-shadow: 0 0 0 2px #ffffff;
+  background: var(--color-white);
+  box-shadow: 0 0 0 2px var(--color-white);
 }
 
 html[data-theme='light'] .lead-status-summary__value--total {
-  color: #0f172a;
+  color: var(--color-slate-900);
 }
 
 html[data-theme='light'] .lead-status-summary__value--new {
@@ -676,7 +678,7 @@ html[data-theme='light'] .lead-status-summary__value--contacting {
 }
 
 html[data-theme='light'] .lead-status-summary__value--converted {
-  color: #15803d;
+  color: var(--color-green-600);
 }
 
 html[data-theme='light'] .lead-status-summary__value--lost {
@@ -684,20 +686,20 @@ html[data-theme='light'] .lead-status-summary__value--lost {
 }
 
 html[data-theme='light'] .lead-status-summary__value--hold {
-  color: #475569;
+  color: var(--color-slate-600);
 }
 
 html[data-theme='light'] .lead-status-summary__value--progress {
-  color: #2563eb;
+  color: var(--color-blue-600);
 }
 
 html[data-theme='light'] .lead-status-summary__value--won {
-  color: #15803d;
+  color: var(--color-green-600);
 }
 
 html[data-theme='light'] .data-table th,
 html[data-theme='light'] .data-table td {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-slate-200);
 }
 
 html[data-theme='light'] .data-table__row:hover td {
@@ -710,7 +712,7 @@ html[data-theme='light'] .data-table__row--active td {
 
 html[data-theme='light'] .select-clear {
   background: rgba(148, 163, 184, 0.2);
-  color: #334155;
+  color: var(--color-slate-700);
 }
 
 html[data-theme='light'] .select-clear:hover {
@@ -731,7 +733,7 @@ html[data-theme='light'] .table-link--disabled {
 
 
 html[data-theme='light'] .data-table__row--disabled td {
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 
@@ -740,8 +742,8 @@ html[data-theme='light'] .project-form textarea,
 html[data-theme='light'] .project-form__field input,
 html[data-theme='light'] .project-form__field textarea,
 html[data-theme='light'] .project-form__field select {
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--color-white);
+  color: var(--color-slate-900);
   border-color: rgba(148, 163, 184, 0.6);
   background-image: none;
 }
@@ -755,7 +757,7 @@ html[data-theme='light'] .project-form__field select {
 
 html[data-theme='light'] .project-form input[type='date'],
 html[data-theme='light'] .project-form__field input[type='date'] {
-  color: #0f172a;
+  color: var(--color-slate-900);
   color-scheme: light;
 }
 
@@ -769,12 +771,12 @@ html[data-theme='light'] .project-form input[type='date']::-webkit-datetime-edit
 html[data-theme='light'] .project-form__field input[type='date']::-webkit-datetime-edit-day-field,
 html[data-theme='light'] .project-form input[type='date']::-webkit-datetime-edit-year-field,
 html[data-theme='light'] .project-form__field input[type='date']::-webkit-datetime-edit-year-field {
-  color: #0f172a;
+  color: var(--color-slate-900);
 }
 
 html[data-theme='light'] .project-form__field span {
-  background: #ffffff;
-  color: #94a3b8;
+  background: var(--color-white);
+  color: var(--color-slate-400);
 }
 
 html[data-theme='light'] .project-form__field input[readonly] + span,
@@ -782,8 +784,8 @@ html[data-theme='light'] .project-form__field input:disabled + span,
 html[data-theme='light'] .project-form__field textarea[readonly] + span,
 html[data-theme='light'] .project-form__field textarea:disabled + span,
 html[data-theme='light'] .project-form__field select:disabled + span {
-  background: #f1f5f9;
-  box-shadow: 0 0 0 2px #f1f5f9;
+  background: var(--color-slate-100);
+  box-shadow: 0 0 0 2px var(--color-slate-100);
   color: #9aa4b2;
 }
 
@@ -792,19 +794,19 @@ html[data-theme='light'] .project-form__field input[type='date']:not([data-fille
   top: -6px;
   transform: translateY(0);
   font-size: 0.72rem;
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 html[data-theme='light'] .project-form__field input[type='date'][data-filled='true'] + span,
 html[data-theme='light'] .project-form__field input[type='date']:focus + span {
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 html[data-theme='light'] .project-form input::placeholder,
 html[data-theme='light'] .project-form textarea::placeholder,
 html[data-theme='light'] .project-form__field input::placeholder,
 html[data-theme='light'] .project-form__field textarea::placeholder {
-  color: #94a3b8;
+  color: var(--color-slate-400);
 }
 
 html[data-theme='light'] .project-form input:focus,
@@ -812,12 +814,12 @@ html[data-theme='light'] .project-form textarea:focus,
 html[data-theme='light'] .project-form__field input:focus,
 html[data-theme='light'] .project-form__field textarea:focus,
 html[data-theme='light'] .project-form__field select:focus {
-  border-color: #60a5fa;
+  border-color: var(--color-blue-400);
   box-shadow: none;
 }
 
 html[data-theme='light'] .form-actions__reset {
-  color: #64748b;
+  color: var(--color-slate-500);
 }
 
 html[data-theme='light'] .project-form__submit--danger {
@@ -828,7 +830,7 @@ html[data-theme='light'] .project-form__submit--danger {
 
 html[data-theme='light'] .project-form__submit {
   background: #111827;
-  color: #f8fafc;
+  color: var(--color-slate-50);
   border-color: rgba(15, 23, 42, 0.2);
 }
 

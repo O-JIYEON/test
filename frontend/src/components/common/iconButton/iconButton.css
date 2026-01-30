@@ -1,7 +1,7 @@
 .icon-button {
   border: none;
   background: #1f2937;
-  color: #e2e8f0;
+  color: var(--color-slate-200);
   border-radius: 8px;
   padding: 6px;
   cursor: pointer;
@@ -18,7 +18,7 @@
 }
 
 .icon-button:hover {
-  background: #334155;
+  background: var(--color-slate-700);
   transform: translateY(-1px);
 }
 

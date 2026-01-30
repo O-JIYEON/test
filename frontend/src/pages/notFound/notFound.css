@@ -18,5 +18,5 @@
 
 .not-found__animation + p {
     font-weight: bold;
-    color: #94a3b8;
+    color: var(--color-slate-400);
 }

@@ -6,7 +6,7 @@ import {
   fetchDeals,
   createDeal,
   updateDeal,
-  deleteDeal
+  deleteDeal as deleteDealApi
 } from '../../api/deals.api';
 import { fetchLeads } from '../../api/leads.api';
 import { fetchActivityLogs } from '../../api/activities.api';
@@ -448,9 +448,9 @@ function DealsPage() {
     });
   };
 
-  const deleteDeal = async () => {
+  const deleteDealAction = async () => {
     try {
-      await deleteDeal(editingId);
+      await deleteDealApi(editingId);
       await loadDeals();
       setIsModalOpen(false);
       setEditingId(null);
@@ -473,7 +473,7 @@ function DealsPage() {
       open: true,
       message: '딜 정보를 삭제하시겠습니까?',
       onConfirm: () => {
-        deleteDeal();
+        deleteDealAction();
         setConfirmState({ open: false, message: '', onConfirm: null });
       }
     });

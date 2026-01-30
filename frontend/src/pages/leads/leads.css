@@ -41,7 +41,7 @@
   right: 0;
   max-height: 300px;
   overflow-y: auto;
-  background: #0b1120;
+  background: var(--color-navy-950);
   border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: 12px;
   box-shadow: 0 16px 30px rgba(2, 6, 23, 0.45);
@@ -54,7 +54,7 @@
   text-align: left;
   border: none;
   background: transparent;
-  color: #e2e8f0;
+  color: var(--color-slate-200);
   min-height: 48px;
   padding: 12px 10px;
   border-radius: 8px;
@@ -71,7 +71,7 @@
 
 .lead-customer-select__empty {
   padding: 10px 12px;
-  color: #94a3b8;
+  color: var(--color-slate-400);
   font-size: 0.9rem;
 }
 
@@ -94,17 +94,17 @@
 
 .lead-badge--contacting {
   background: rgba(254, 215, 170, 0.2);
-  color: #fed7aa;
+  color: var(--color-amber-200);
 }
 
 .lead-badge--converted {
   background: rgba(187, 247, 208, 0.2);
-  color: #bbf7d0;
+  color: var(--color-green-200);
 }
 
 .lead-badge--lost {
   background: rgba(254, 202, 202, 0.2);
-  color: #fecaca;
+  color: var(--color-red-200);
 }
 
 .lead-badge--hold {
@@ -114,7 +114,7 @@
 
 .lead-badge--default {
   background: rgba(148, 163, 184, 0.2);
-  color: #e2e8f0;
+  color: var(--color-slate-200);
 }
 
 
@@ -133,19 +133,19 @@
 }
 
 html[data-theme='light'] .lead-badge--new {
-  color: #2563eb;
+  color: var(--color-blue-600);
 }
 
 html[data-theme='light'] .lead-badge--contacting {
-  color: #b45309;
+  color: var(--color-amber-700);
 }
 
 html[data-theme='light'] .lead-badge--converted {
-  color: #15803d;
+  color: var(--color-green-600);
 }
 
 html[data-theme='light'] .lead-badge--lost {
-  color: #dc2626;
+  color: var(--color-red-600);
 }
 
 html[data-theme='light'] .lead-badge--hold {
@@ -153,17 +153,17 @@ html[data-theme='light'] .lead-badge--hold {
 }
 
 html[data-theme='light'] .lead-badge--default {
-  color: #334155;
+  color: var(--color-slate-700);
 }
 
 
 html[data-theme='light'] .lead-customer-select__list {
-  background: #ffffff;
+  background: var(--color-white);
   border-color: rgba(148, 163, 184, 0.35);
 }
 
 html[data-theme='light'] .lead-customer-select__option {
-  color: #0f172a;
+  color: var(--color-slate-900);
 }
 
 html[data-theme='light'] .lead-customer-select__option:hover {
@@ -175,5 +175,5 @@ html[data-theme='light'] .lead-customer-select__option--active {
 }
 
 html[data-theme='light'] .lead-customer-select__empty {
-  color: #64748b;
+  color: var(--color-slate-500);
 }

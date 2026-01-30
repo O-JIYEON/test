@@ -3,7 +3,7 @@ import { sequelize } from '../../models/index.js';
 import { getModels } from '../../models/index.js';
 import { normalizeDateValue, normalizeIdValue } from '../../utils/normalize.js';
 import { createActivityLog, getLeadLogPayload, getDealLogPayload } from '../_shared/activityLogs.js';
-import { getNextDailySequence } from '../_shared/sequence.js';
+import { assignDailyCodeWithRetry } from '../_shared/sequence.js';
 import { getWritableColumns } from '../_shared/columns.js';
 
 export async function createLead(req, res) {
@@ -43,11 +43,14 @@ export async function createLead(req, res) {
       const baseCreatedAt = leadRow?.created_at ?? dayjs().toDate();
       const kstDate = dayjs(baseCreatedAt).add(9, 'hour');
       const kstDateKey = kstDate.format('YYYYMMDD');
-      const seq = await getNextDailySequence(Lead, 'lead_code', '-L', kstDate.toDate(), transaction);
-
-      await Lead.update(
-        { lead_code: `${kstDateKey}-L${seq}` },
-        { where: { id: created.id }, transaction }
+      await assignDailyCodeWithRetry(
+        Lead,
+        created.id,
+        'lead_code',
+        '-L',
+        kstDate.toDate(),
+        kstDateKey,
+        transaction
       );
 
       const leadLogPayload = await getLeadLogPayload(created.id, transaction);
@@ -80,10 +83,14 @@ export async function createLead(req, res) {
           const createdAt = dealRow?.created_at ?? dayjs().toDate();
           const dealKst = dayjs(createdAt).add(9, 'hour');
           const dealKey = dealKst.format('YYYYMMDD');
-          const dealSeq = await getNextDailySequence(Deal, 'deal_code', '-D', dealKst.toDate(), transaction);
-          await Deal.update(
-            { deal_code: `${dealKey}-D${dealSeq}` },
-            { where: { id: deal.id }, transaction }
+          await assignDailyCodeWithRetry(
+            Deal,
+            deal.id,
+            'deal_code',
+            '-D',
+            dealKst.toDate(),
+            dealKey,
+            transaction
           );
 
           const dealLogPayload = await getDealLogPayload(deal.id, transaction);

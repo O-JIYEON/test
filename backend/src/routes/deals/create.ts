@@ -3,7 +3,7 @@ import { sequelize } from '../../models/index.js';
 import { getModels } from '../../models/index.js';
 import { normalizeDateValue, normalizeNumberValue } from '../../utils/normalize.js';
 import { createActivityLog, getDealLogPayload } from '../_shared/activityLogs.js';
-import { getNextDailySequence } from '../_shared/sequence.js';
+import { assignDailyCodeWithRetry } from '../_shared/sequence.js';
 import { getWritableColumns } from '../_shared/columns.js';
 
 export async function createDeal(req, res) {
@@ -43,11 +43,14 @@ export async function createDeal(req, res) {
       const createdAt = dealRow?.created_at ?? dayjs().toDate();
       const kstDate = dayjs(createdAt).add(9, 'hour');
       const kstDateKey = kstDate.format('YYYYMMDD');
-      const seq = await getNextDailySequence(Deal, 'deal_code', '-D', kstDate.toDate(), transaction);
-
-      await Deal.update(
-        { deal_code: `${kstDateKey}-D${seq}` },
-        { where: { id: created.id }, transaction }
+      await assignDailyCodeWithRetry(
+        Deal,
+        created.id,
+        'deal_code',
+        '-D',
+        kstDate.toDate(),
+        kstDateKey,
+        transaction
       );
 
       const dealLogPayload = await getDealLogPayload(created.id, transaction);
