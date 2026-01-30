@@ -510,7 +510,19 @@ function DealsPage() {
     if (!editingId) {
       return [];
     }
-    return activityLogs.filter((log) => String(log.deal_id) === String(editingId));
+    return activityLogs
+      .filter((log) => String(log.deal_id) === String(editingId))
+      .slice()
+      .sort((a, b) => {
+        const aTime = a.activity_date ? new Date(a.activity_date).getTime() : 0;
+        const bTime = b.activity_date ? new Date(b.activity_date).getTime() : 0;
+        if (aTime !== bTime) {
+          return aTime - bTime;
+        }
+        const aId = Number(a.id) || 0;
+        const bId = Number(b.id) || 0;
+        return aId - bId;
+      });
   }, [activityLogs, editingId]);
 
   const dealStatusSummary = useMemo(() => {

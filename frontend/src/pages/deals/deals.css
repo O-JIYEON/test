@@ -147,7 +147,7 @@ html[data-theme='light'] .deal-status-badge--lost {
 }
 
 .deal-modal__body--triple {
-  grid-template-columns: 1fr 1.5fr 350px;
+  grid-template-columns: 1fr 1.5fr 380px;
 }
 
 .deal-modal__body--double {

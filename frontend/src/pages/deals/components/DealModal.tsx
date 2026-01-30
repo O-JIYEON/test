@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import IconButton from '../../../components/common/IconButton';
 import xIcon from '../../../assets/icon/x.svg';
 
@@ -51,6 +52,21 @@ function DealModal({
   if (!isOpen) {
     return null;
   }
+
+  const logsListRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showLogPanel) {
+      return;
+    }
+    const target = logsListRef.current;
+    if (!target) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      target.scrollTop = target.scrollHeight;
+    });
+  }, [showLogPanel, dealLogs.length, isOpen]);
 
   return (
     <div className="modal">
@@ -231,13 +247,13 @@ function DealModal({
                 <h4 className="deal-modal__logs-title">활동기록</h4>
                 <span className="help-badge" aria-label="도움말">
                   ?
-                  <span className="help-badge__tooltip">최신 항목은 위에서부터 표시됩니다.</span>
+                  <span className="help-badge__tooltip">최신 기록은 하단에 표시됩니다.</span>
                 </span>
               </div>
               {dealLogs.length === 0 ? (
                 <p className="table__status">기록이 없습니다.</p>
               ) : (
-                <div className="deal-modal__logs-list">
+                <div className="deal-modal__logs-list" ref={logsListRef}>
                   {dealLogs.map((log) => (
                     <div
                       className="deal-modal__log-item"
