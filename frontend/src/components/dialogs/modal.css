@@ -51,6 +51,13 @@
   border-radius: 16px 16px 0 0;
 }
 
+.modal__content > .project-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .modal__title-row {
   display: flex;
   align-items: center;
