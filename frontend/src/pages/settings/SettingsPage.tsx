@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
-import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
+import CategoryModal from './components/CategoryModal';
+import ValueModal from './components/ValueModal';
 import './settings.css';
 import {
   fetchLookupCategories,
@@ -325,122 +326,24 @@ function SettingsPage() {
           </div>
         </div>
       </section>
-      {isCategoryModalOpen && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={() => setIsCategoryModalOpen(false)} />
-          <div className="modal__content modal__content--white modal__content--compact" role="dialog" aria-modal="true">
-            <div className="modal__header">
-              <div className="modal__title-row modal__title-row--spaced">
-                <h3>{categoryEditingId ? '카테고리 수정' : '카테고리 등록'}</h3>
-                <IconButton
-                  onClick={() => setIsCategoryModalOpen(false)}
-                  aria-label="닫기"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                  </svg>
-                </IconButton>
-              </div>
-            </div>
-            <form className="project-form modal__body" onSubmit={handleCategorySubmit}>
-              <label className="project-form__field" htmlFor="category-label">
-                <input
-                  id="category-label"
-                  name="label"
-                  type="text"
-                  placeholder=" "
-                  value={categoryForm.label}
-                  onChange={(event) => setCategoryForm((prev) => ({ ...prev, label: event.target.value }))}
-                />
-                <span>이름</span>
-              </label>
-              <div className="form-actions modal__actions">
-                <button className="project-form__submit" type="submit">
-                  저장
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {isValueModalOpen && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={() => setIsValueModalOpen(false)} />
-          <div className="modal__content modal__content--white modal__content--compact" role="dialog" aria-modal="true">
-            <div className="modal__header">
-              <div className="modal__title-row modal__title-row--spaced">
-                <h3>{valueEditingId ? '값 수정' : '값 등록'}</h3>
-                <IconButton
-                  onClick={() => setIsValueModalOpen(false)}
-                  aria-label="닫기"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                  </svg>
-                </IconButton>
-              </div>
-            </div>
-            <form className="project-form modal__body" onSubmit={handleValueSubmit}>
-              <label className="project-form__field" htmlFor="value-label">
-                <input
-                  id="value-label"
-                  name="label"
-                  type="text"
-                  placeholder=" "
-                  value={valueForm.label}
-                  onChange={(event) => setValueForm((prev) => ({ ...prev, label: event.target.value }))}
-                />
-                <span>값</span>
-              </label>
-              {isOwnerCategory && (
-                <label className="project-form__field" htmlFor="value-department">
-                  <input
-                    id="value-department"
-                    name="department"
-                    type="text"
-                    placeholder=" "
-                    value={valueForm.department}
-                    onChange={(event) => setValueForm((prev) => ({ ...prev, department: event.target.value }))}
-                  />
-                  <span>부서</span>
-                </label>
-              )}
-              {isPipelineCategory && (
-                <label className="project-form__field" htmlFor="value-probability">
-                  <input
-                    id="value-probability"
-                    name="probability"
-                    type="number"
-                    step="0.01"
-                    placeholder=" "
-                    value={valueForm.probability}
-                    onChange={(event) => setValueForm((prev) => ({ ...prev, probability: event.target.value }))}
-                  />
-                  <span>확률</span>
-                </label>
-              )}
-              <label className="project-form__field" htmlFor="value-sort">
-                <input
-                  id="value-sort"
-                  name="sort_order"
-                  type="number"
-                  placeholder=" "
-                  value={valueForm.sort_order}
-                  onChange={(event) => setValueForm((prev) => ({ ...prev, sort_order: event.target.value }))}
-                />
-                <span>정렬</span>
-              </label>
-              <div className="form-actions modal__actions">
-                <button className="project-form__submit" type="submit">
-                  저장
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        categoryEditingId={categoryEditingId}
+        categoryForm={categoryForm}
+        setCategoryForm={setCategoryForm}
+        closeModal={() => setIsCategoryModalOpen(false)}
+        handleSubmit={handleCategorySubmit}
+      />
+      <ValueModal
+        isOpen={isValueModalOpen}
+        valueEditingId={valueEditingId}
+        valueForm={valueForm}
+        setValueForm={setValueForm}
+        isOwnerCategory={isOwnerCategory}
+        isPipelineCategory={isPipelineCategory}
+        closeModal={() => setIsValueModalOpen(false)}
+        handleSubmit={handleValueSubmit}
+      />
       <ConfirmDialog
         open={confirmState.open}
         message={confirmState.message}

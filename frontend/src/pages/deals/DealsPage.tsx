@@ -12,11 +12,11 @@ import { fetchLeads } from '../../api/leads.api';
 import { fetchActivityLogs } from '../../api/activities.api';
 import { fetchLookupValues } from '../../api/lookup.api';
 import Pagination from '../../components/common/pagination';
-import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
+import DealModal from './components/DealModal';
+import LeadInfoModal from './components/LeadInfoModal';
 import './deals.css';
-import './dealModal.css';
 import dayjs, {
   formatDate as formatDateValue,
   formatDateTime as formatDateTimeValue,
@@ -839,262 +839,29 @@ function DealsPage() {
           )}
         </div>
       </section>
-      {isModalOpen && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={closeModal} />
-          <div
-            className={`modal__content modal__content--white deal-modal__content ${modalSizeClass}`}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="modal__header">
-              <div className="modal__title-row modal__title-row--spaced">
-                <h3>{editingId ? formData.deal_code || editingId : '딜 등록'}</h3>
-                <IconButton onClick={closeModal} aria-label="닫기">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                  </svg>
-                </IconButton>
-              </div>
-            </div>
-            <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
-              {showLeadPanel && (
-                <div className="deal-modal__lead">
-                  {dealLeadInfo ? (
-                    <div className="deal-modal__lead-form">
-                      {leadModalLeftFields.map((field) => {
-                        const rawValue =
-                          field.name === 'lead_code'
-                            ? formData.lead_code || formData.lead_id || dealLeadInfo.lead_code || dealLeadInfo.id
-                            : dealLeadInfo[field.name];
-                        return (
-                          <label className="project-form__field" key={field.name}>
-                            <input
-                              type="text"
-                              placeholder=" "
-                              value={rawValue ?? ''}
-                              data-filled={rawValue ? 'true' : 'false'}
-                              readOnly
-                            />
-                            <span>{field.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="table__status">리드 정보를 찾을 수 없습니다.</p>
-                  )}
-                </div>
-              )}
-              <form className="project-form deal-modal__form" onSubmit={handleSubmit}>
-                {dealFields.map((field) => {
-                  const stageValue = formData.stage || '';
-                  if (showLeadPanel && field.name === 'lead_id') {
-                    return null;
-                  }
-                  if (editingId && stageValue === '실주') {
-                    if (
-                      ['expected_amount', 'expected_close_date', 'won_date', 'next_action_date', 'next_action_content'].includes(
-                        field.name
-                      )
-                    ) {
-                      return null;
-                    }
-                  }
-                  if (field.name === 'won_date' && stageValue !== '수주') {
-                    return null;
-                  }
-                  if (editingId && stageValue && stageValue !== '실주' && field.name === 'loss_reason') {
-                    return null;
-                  }
-                  return (
-                    <label
-                      className={`project-form__field${field.type === 'select' ? ' project-form__field--has-clear' : ''}`}
-                      htmlFor={`deal-${field.name}`}
-                      key={field.name}
-                    >
-                      {field.type === 'textarea' ? (
-                        <textarea
-                          id={`deal-${field.name}`}
-                          name={field.name}
-                          rows="4"
-                          placeholder=" "
-                          value={formData[field.name] ?? ''}
-                          onChange={(event) => handleChange(field.name, event.target.value)}
-                        />
-                      ) : field.type === 'select' ? (
-                        <>
-                          {field.name === 'lead_id' && editingId ? (
-                            <input
-                              id={`deal-${field.name}`}
-                              name={field.name}
-                              type="text"
-                              placeholder=" "
-                              value={formData.lead_code || formData.lead_id || ''}
-                              data-filled={formData.lead_code || formData.lead_id ? 'true' : 'false'}
-                              readOnly
-                            />
-                          ) : (
-                            <>
-                              <select
-                                id={`deal-${field.name}`}
-                                name={field.name}
-                                value={formData[field.name] ?? ''}
-                                data-filled={formData[field.name] ? 'true' : 'false'}
-                                onChange={(event) => handleChange(field.name, event.target.value)}
-                              >
-                                <option value="" hidden />
-                                {field.name === 'lead_id'
-                                  ? leads.map((lead) => (
-                                      <option key={lead.id} value={lead.id}>
-                                        {lead.lead_code || lead.id} - {lead.company}
-                                      </option>
-                                    ))
-                                  : (() => {
-                                      if (field.name !== 'stage') {
-                                        return field.options?.map((option) => (
-                                          <option key={option} value={option}>
-                                            {option}
-                                          </option>
-                                        ));
-                                      }
-                                      const currentValue = formData[field.name] ?? '';
-                                      const mergedOptions = Array.from(
-                                        new Set([currentValue, ...(field.options || [])])
-                                      ).filter(Boolean);
-                                      return mergedOptions.map((option) => (
-                                        <option key={option} value={option}>
-                                          {option}
-                                        </option>
-                                      ));
-                                    })()}
-                              </select>
-                              {formData[field.name] && (
-                                <button
-                                  className="select-clear"
-                                  type="button"
-                                  aria-label={`${field.label} 초기화`}
-                                  onClick={() => handleChange(field.name, '')}
-                                >
-                                  ×
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <input
-                          id={`deal-${field.name}`}
-                          name={field.name}
-                          type={field.name === 'expected_amount' ? 'text' : field.type}
-                          inputMode={field.name === 'expected_amount' ? 'numeric' : undefined}
-                          placeholder=" "
-                          value={formData[field.name] ?? ''}
-                          data-filled={field.type === 'date' ? (formData[field.name] ? 'true' : 'false') : undefined}
-                          onChange={(event) => {
-                            if (field.type === 'date') {
-                              event.target.dataset.filled = event.target.value ? 'true' : 'false';
-                              handleChange(field.name, event.target.value);
-                              return;
-                            }
-                            if (field.name === 'expected_amount') {
-                              const raw = event.target.value.replace(/[^\d]/g, '');
-                              const formatted = raw ? Number(raw).toLocaleString('ko-KR') : '';
-                              handleChange(field.name, formatted);
-                              return;
-                            }
-                            handleChange(field.name, event.target.value);
-                          }}
-                        />
-                      )}
-                      <span>{field.label}</span>
-                    </label>
-                  );
-                })}
-                <div className="form-actions modal__actions">
-                  <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
-                    {editingId ? '저장' : '등록'}
-                  </button>
-                  {editingId && (
-                    <button
-                      className="project-form__submit project-form__submit--danger"
-                      type="button"
-                      onClick={handleDelete}
-                    >
-                      삭제
-                    </button>
-                  )}
-                </div>
-                {errorMessage && null}
-              </form>
-              {showLogPanel && (
-                <div className="deal-modal__logs">
-                  <div className="deal-modal__logs-header">
-                    <h4 className="deal-modal__logs-title">활동기록</h4>
-                    <span className="help-badge" aria-label="도움말">
-                      ?
-                      <span className="help-badge__tooltip">최신 항목은 위에서부터 표시됩니다.</span>
-                    </span>
-                  </div>
-                  {dealLogs.length === 0 ? (
-                    <p className="table__status">기록이 없습니다.</p>
-                  ) : (
-                    <div className="deal-modal__logs-list">
-                      {dealLogs.map((log) => (
-                        <div
-                          className="deal-modal__log-item"
-                          key={log.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => applyLogToForm(log)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              applyLogToForm(log);
-                            }
-                          }}
-                        >
-                          <div className="deal-modal__log-header">
-                            <span className="deal-modal__log-date">{formatDate(log.activity_date)}</span>
-                            {log.deal_stage && (
-                              <span className="deal-modal__log-badge">{log.deal_stage}</span>
-                            )}
-                          </div>
-                          <div className="deal-modal__log-row">
-                            <span className="deal-modal__log-label">담당자</span>
-                            <span className="deal-modal__log-value">{log.manager || '-'}</span>
-                          </div>
-                          <div className="deal-modal__log-row">
-                            <span className="deal-modal__log-label">프로젝트명</span>
-                            <span className="deal-modal__log-value">{log.project_name || '-'}</span>
-                          </div>
-                          <div className="deal-modal__log-row">
-                            <span className="deal-modal__log-label">예상금액</span>
-                            <span className="deal-modal__log-value">{formatAmount(log.expected_amount) || '-'}</span>
-                          </div>
-                          <div className="deal-modal__log-row">
-                            <span className="deal-modal__log-label">다음액션일</span>
-                            <span className="deal-modal__log-value">{formatDate(log.next_action_date) || '-'}</span>
-                          </div>
-                          <div className="deal-modal__log-row">
-                            <span className="deal-modal__log-label">다음액션내용</span>
-                            <span className="deal-modal__log-value">{log.next_action_content || '-'}</span>
-                          </div>
-                          <div className="deal-modal__log-row">
-                            <span className="deal-modal__log-label">담당자(영업)</span>
-                            <span className="deal-modal__log-value">{log.sales_owner || '-'}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <DealModal
+        isOpen={isModalOpen}
+        editingId={editingId}
+        formData={formData}
+        modalSizeClass={modalSizeClass}
+        modalLayoutClass={modalLayoutClass}
+        showLeadPanel={showLeadPanel}
+        showLogPanel={showLogPanel}
+        dealLeadInfo={dealLeadInfo}
+        leadModalLeftFields={leadModalLeftFields}
+        dealFields={dealFields}
+        leads={leads}
+        dealLogs={dealLogs}
+        formStatus={formStatus}
+        errorMessage={errorMessage}
+        closeModal={closeModal}
+        handleSubmit={handleSubmit}
+        handleChange={handleChange}
+        handleDelete={handleDelete}
+        applyLogToForm={applyLogToForm}
+        formatDate={formatDate}
+        formatAmount={formatAmount}
+      />
       <ConfirmDialog
         open={confirmState.open}
         message={confirmState.message}
@@ -1102,55 +869,14 @@ function DealsPage() {
         onCancel={handleConfirmCancel}
       />
       <Toast message={toastMessage} variant={toastType} />
-      {isLeadModalOpen && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={closeLeadModal} />
-          <div className="modal__content" role="dialog" aria-modal="true">
-            <div className="modal__header">
-              <div className="modal__title-row modal__title-row--spaced">
-                <h3>리드 정보</h3>
-                <IconButton onClick={closeLeadModal} aria-label="닫기">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                  </svg>
-                </IconButton>
-              </div>
-            </div>
-            <div className="modal__body">
-              {selectedLead ? (
-                <div className="lead-info">
-                  <div className="lead-info__grid">
-                    <div className="lead-info__column">
-                      {leadCustomerFields.map((field) => (
-                        <div className="lead-info__item" key={field.name}>
-                          <span className="lead-info__label">{field.label}</span>
-                          <span className="lead-info__value">{selectedLead[field.name] ?? '-'}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="lead-info__column">
-                      {leadDetailFields.map((field) => {
-                        const rawValue = selectedLead[field.name];
-                        const displayValue =
-                          field.type === 'date' ? formatDate(rawValue) : rawValue ?? '-';
-                        return (
-                          <div className="lead-info__item" key={field.name}>
-                            <span className="lead-info__label">{field.label}</span>
-                            <span className="lead-info__value">{displayValue || '-'}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="table__status">리드 정보를 찾을 수 없습니다.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <LeadInfoModal
+        isOpen={isLeadModalOpen}
+        selectedLead={selectedLead}
+        leadCustomerFields={leadCustomerFields}
+        leadDetailFields={leadDetailFields}
+        closeModal={closeLeadModal}
+        formatDate={formatDate}
+      />
     </>
   );
 }

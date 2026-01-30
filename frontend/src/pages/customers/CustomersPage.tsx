@@ -15,6 +15,8 @@ import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
 import Pagination from '../../components/common/pagination';
 import IconButton from '../../components/common/IconButton';
+import CustomerModal from './components/CustomerModal';
+import ContactModal from './components/ContactModal';
 import { formatKstDate, formatKstDateTime } from '../../utils/date';
 import './customers.css';
 
@@ -661,118 +663,30 @@ function CustomersPage() {
           </div>
         </div>
       </section>
-      {isModalOpen && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={closeModal} />
-          <div className="modal__content modal__content--compact" role="dialog" aria-modal="true">
-            <div className="modal__header">
-              <div className="modal__title-row modal__title-row--spaced">
-                <h3>{editingId ? '고객사 수정' : '고객사 등록'}</h3>
-                <IconButton onClick={closeModal} aria-label="닫기">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                  </svg>
-                </IconButton>
-              </div>
-            </div>
-            <form className="project-form modal__body" onSubmit={handleSubmit}>
-              {customerFields.map((field) => (
-                <label className="project-form__field" htmlFor={`customer-${field.name}`} key={field.name}>
-                  {field.type === 'select' ? (
-                    <select
-                      id={`customer-${field.name}`}
-                      name={field.name}
-                      value={formData[field.name] ?? field.options[0]}
-                      data-filled={formData[field.name] ? 'true' : 'false'}
-                      onChange={(event) => handleChange(field.name, event.target.value)}
-                    >
-                      {field.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      id={`customer-${field.name}`}
-                      name={field.name}
-                      type={field.type}
-                      placeholder=" "
-                      value={formData[field.name] ?? ''}
-                      onChange={(event) => handleChange(field.name, event.target.value)}
-                    />
-                  )}
-                  <span>{field.label}</span>
-                </label>
-              ))}
-              <div className="form-actions modal__actions">
-                <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
-                  {editingId ? '저장' : '등록'}
-                </button>
-                {editingId && (
-                  <button
-                    className="project-form__submit project-form__submit--danger"
-                    type="button"
-                    onClick={handleDelete}
-                  >
-                    삭제
-                  </button>
-                )}
-              </div>
-              {errorMessage && null}
-            </form>
-          </div>
-        </div>
-      )}
-      {isContactModalOpen && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={closeContactModal} />
-          <div className="modal__content modal__content--compact" role="dialog" aria-modal="true">
-            <div className="modal__header">
-              <div className="modal__title-row modal__title-row--spaced">
-                <h3>{contactEditingId ? '담당자 수정' : '담당자 등록'}</h3>
-                <IconButton onClick={closeContactModal} aria-label="닫기">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                  </svg>
-                </IconButton>
-              </div>
-            </div>
-            <form className="project-form modal__body" onSubmit={handleContactSubmit}>
-              {contactFields.map((field) => (
-                <label className="project-form__field" htmlFor={`contact-${field.name}`} key={field.name}>
-                  <input
-                    id={`contact-${field.name}`}
-                    name={field.name}
-                    type={field.type}
-                    placeholder=" "
-                    value={contactFormData[field.name] ?? ''}
-                    onChange={(event) => handleContactChange(field.name, event.target.value)}
-                  />
-                  <span>{field.label}</span>
-                </label>
-              ))}
-              <div className="form-actions modal__actions">
-                <button className="project-form__submit" type="submit" disabled={contactFormStatus === 'saving'}>
-                  {contactEditingId ? '저장' : '등록'}
-                </button>
-                {contactEditingId && (
-                  <button
-                    className="project-form__submit project-form__submit--danger"
-                    type="button"
-                    onClick={handleContactDelete}
-                  >
-                    삭제
-                  </button>
-                )}
-              </div>
-              {contactErrorMessage && null}
-            </form>
-          </div>
-        </div>
-      )}
+      <CustomerModal
+        isOpen={isModalOpen}
+        editingId={editingId}
+        customerFields={customerFields}
+        formData={formData}
+        formStatus={formStatus}
+        errorMessage={errorMessage}
+        closeModal={closeModal}
+        handleSubmit={handleSubmit}
+        handleChange={handleChange}
+        handleDelete={handleDelete}
+      />
+      <ContactModal
+        isOpen={isContactModalOpen}
+        contactEditingId={contactEditingId}
+        contactFields={contactFields}
+        contactFormData={contactFormData}
+        contactFormStatus={contactFormStatus}
+        contactErrorMessage={contactErrorMessage}
+        closeModal={closeContactModal}
+        handleSubmit={handleContactSubmit}
+        handleChange={handleContactChange}
+        handleDelete={handleContactDelete}
+      />
       <ConfirmDialog
         open={confirmState.open}
         message={confirmState.message}

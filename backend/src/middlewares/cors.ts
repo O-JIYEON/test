@@ -4,7 +4,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
-const allowAnyOrigin = process.env.NODE_ENV !== 'production' && allowedOrigins.length === 0;
+const isProduction = process.env.NODE_ENV === 'production';
 
 export default function corsMiddleware(req: Request, res: Response, next: NextFunction) {
   const origin = req.headers.origin;
@@ -12,14 +12,14 @@ export default function corsMiddleware(req: Request, res: Response, next: NextFu
     next();
     return;
   }
-  if (allowAnyOrigin) {
+  if (!isProduction) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);
     return;

@@ -5,9 +5,12 @@ import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
-import IconButton from '../../components/common/IconButton';
 import trashIcon from '../../assets/icon/trash.svg';
 import penLineIcon from '../../assets/icon/penLine.svg';
+import SummaryModal from './components/SummaryModal';
+import GoalModal from './components/GoalModal';
+import GoalFormModal from './components/GoalFormModal';
+import DealEditModal from './components/DealEditModal';
 import { fetchDeals, updateDeal, deleteDeal } from '../../api/deals.api';
 import { fetchLeads } from '../../api/leads.api';
 import { fetchActivityLogs } from '../../api/activities.api';
@@ -19,7 +22,6 @@ import dayjs, {
   normalizeDateForCompare
 } from '../../utils/date';
 import './dashboard.css';
-import '../deals/dealModal.css';
 
 const useCountUp = (value, duration = 300) => {
   const [display, setDisplay] = useState(0);
@@ -1842,544 +1844,74 @@ function DashboardPage() {
           </div>
         </div>
       </section>
-      {isSummaryModalOpen && (
-        <div className="modal dashboard-summary-modal__wrap">
-          <div className="modal__overlay" onClick={() => setIsSummaryModalOpen(false)} />
-          <div className="modal__content modal__content--white dashboard-summary-modal" role="dialog" aria-modal="true">
-            <div className="modal__header">
-              <div className="modal__title-row modal__title-row--spaced">
-                <h3>요약 상세</h3>
-                <IconButton onClick={() => setIsSummaryModalOpen(false)} aria-label="닫기">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                  </svg>
-                </IconButton>
-              </div>
-            </div>
-            <div className="modal__body dashboard-summary-modal__body">
-              <div className="dashboard-summary-modal__left">
-                <div className="dashboard-summary-modal__panel">
-                  <h4>부서 목록</h4>
-                  <div className="dashboard-summary-modal__list">
-                    {departmentOptions.length === 0 && <p className="table__status">데이터가 없습니다.</p>}
-                    {departmentOptions.map((dept) => (
-                      <button
-                        key={dept}
-                        type="button"
-                        className={`summary-chip${summaryDepartment === dept ? ' summary-chip--active' : ''}`}
-                        onClick={() => {
-                          setSummaryDepartment(dept);
-                          setSummaryOwner('');
-                        }}
-                      >
-                        {dept}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="dashboard-summary-modal__panel">
-                  <h4>담당자 목록</h4>
-                  <div className="dashboard-summary-modal__list">
-                    {ownerOptions.length === 0 && <p className="table__status">데이터가 없습니다.</p>}
-                    {ownerOptions.map((owner) => (
-                      <button
-                        key={owner}
-                        type="button"
-                        className={`summary-chip${summaryOwner === owner ? ' summary-chip--active' : ''}`}
-                        onClick={() => {
-                          setSummaryOwner(owner);
-                          setSummaryDepartment('');
-                        }}
-                      >
-                        {owner}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="dashboard-summary-modal__right">
-                <div className="dashboard__overview dashboard__overview--compact">
-                  <div className="dashboard__overview-cards dashboard__overview-cards--summary">
-                    {summaryTopCards.map((item) => (
-                      <div className="dashboard__overview-card" key={item.label}>
-                        <span>{item.label}</span>
-                        <strong>
-                          {item.value}
-                          {item.delta && (
-                            <em
-                              className={`dashboard__overview-delta ${item.deltaClass || ''}`}
-                              data-tooltip={item.deltaTooltip || ''}
-                            >
-                              {item.delta}
-                            </em>
-                          )}
-                        </strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="dashboard-summary-modal__charts">
-                  <div className="dashboard-summary-modal__charts-header">
-                    <div />
-                    <div className="dashboard__period-toggle" data-active-index={periodMode === 'month' ? '1' : '0'}>
-                      <button
-                        type="button"
-                        className={`dashboard__period-btn${periodMode === 'year' ? ' dashboard__period-btn--active' : ''}`}
-                        onClick={() => setPeriodMode('year')}
-                      >
-                        연도별
-                      </button>
-                      <button
-                        type="button"
-                        className={`dashboard__period-btn${periodMode === 'month' ? ' dashboard__period-btn--active' : ''}`}
-                        onClick={() => setPeriodMode('month')}
-                      >
-                        월별
-                      </button>
-                    </div>
-                  </div>
-                  <div className="dashboard-summary-modal__row">
-                    <div className="dashboard__section">
-                      <div className="dashboard__section-header">
-                        <div className="dashboard__section-title">수주액</div>
-                      </div>
-                      <div className="dashboard__chart">
-                        <div className="dashboard__chart-canvas">
-                          {summaryMonthlyData.length === 0 ? (
-                            <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                          ) : (
-                            <ReactApexChart options={summaryMonthlyOptions} series={summaryMonthlySeries} type="line" height={220} />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="dashboard__section">
-                      <div className="dashboard__section-title">상태별 건수</div>
-                      <div className="dashboard__pipeline-stats-wrapper">
-                        <div className="dashboard__pipeline-stats">
-                          <div className="dashboard__pipeline-stats-chart">
-                            {summaryStatusTrend.categories.length === 0 ? (
-                              <p className="table__status table__status--centered">데이터가 없습니다.</p>
-                            ) : (
-                              <ReactApexChart options={summaryStatusOptions} series={summaryStatusTrend.series} type="bar" height={220} />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className={`dashboard-summary-modal__upcoming-grid${summaryLossReasons.length === 0 ? ' dashboard-summary-modal__upcoming-grid--full' : ''}`}>
-                  <div className="dashboard-summary-modal__upcoming">
-                    <div className="dashboard__section-title">다음액션 임박 딜</div>
-                    <div className="dashboard__table">
-                      <table className="data-table">
-                        <thead>
-                        <tr>
-                          <th>Deal ID</th>
-                          <th>프로젝트명</th>
-                          <th>회사명</th>
-                          <th>담당자(영업)</th>
-                          <th>다음액션내용</th>
-                          <th>다음액션일</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                          {summaryUpcomingDeals.length === 0 && (
-                          <tr className="data-table__row data-table__row--empty">
-                            <td colSpan={6} className="data-table__empty">데이터가 없습니다.</td>
-                          </tr>
-                          )}
-                          {summaryUpcomingDeals.map((deal) => (
-                            <tr
-                              key={deal.id}
-                              className="data-table__row"
-                              onClick={() => {
-                                openEditModal(deal);
-                              }}
-                            >
-                              <td>{deal.deal_code || deal.id}</td>
-                              <td>{deal.project_name || '-'}</td>
-                              <td>{deal.company || '-'}</td>
-                              <td>{deal.customer_owner || '-'}</td>
-                              <td>{deal.next_action_content || '-'}</td>
-                            <td>
-                              {formatDate(deal.next_action_date) || '-'}
-                              {deal.dday !== null && (
-                                <span className="dashboard-summary-modal__upcoming-dday">
-                                  {deal.dday === 0 ? ' (D-0)' : deal.dday > 0 ? ` (D-${deal.dday})` : ` (D+${Math.abs(deal.dday)})`}
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-                {summaryLossReasons.length > 0 && (
-                  <div className="dashboard-summary-modal__loss">
-                    <div className="dashboard__section-title">실주 사유 Top 3</div>
-                    <div className="dashboard-summary-modal__loss--card">
-                      <div className="dashboard-summary-modal__loss-list">
-                        {summaryLossReasons.map(([reason, count], index) => {
-                          const percent = summaryLossTotal === 0 ? 0 : (count / summaryLossTotal) * 100;
-                          return (
-                            <div className="dashboard-summary-modal__loss-item" key={reason}>
-                              <span className="dashboard-summary-modal__loss-rank">{index + 1}</span>
-                              <span className="dashboard-summary-modal__loss-reason">{reason}</span>
-                              <strong className="dashboard-summary-modal__loss-percent">{percent.toFixed(1)}%</strong>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SummaryModal
+        isOpen={isSummaryModalOpen}
+        departmentOptions={departmentOptions}
+        ownerOptions={ownerOptions}
+        summaryDepartment={summaryDepartment}
+        summaryOwner={summaryOwner}
+        summaryTopCards={summaryTopCards}
+        periodMode={periodMode}
+        summaryMonthlyData={summaryMonthlyData}
+        summaryMonthlyOptions={summaryMonthlyOptions}
+        summaryMonthlySeries={summaryMonthlySeries}
+        summaryStatusOptions={summaryStatusOptions}
+        summaryStatusTrend={summaryStatusTrend}
+        summaryUpcomingDeals={summaryUpcomingDeals}
+        summaryLossReasons={summaryLossReasons}
+        summaryLossTotal={summaryLossTotal}
+        setSummaryDepartment={setSummaryDepartment}
+        setSummaryOwner={setSummaryOwner}
+        setPeriodMode={setPeriodMode}
+        openEditModal={openEditModal}
+        closeModal={() => setIsSummaryModalOpen(false)}
+        formatDate={formatDate}
+      />
 
-      {isGoalModalOpen && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={() => setIsGoalModalOpen(false)} />
-          <div className="modal__content modal__content--white goal-modal" role="dialog" aria-modal="true">
-            <div className="modal__header goal-modal__header">
-              <div className="goal-modal__tabs" data-active-index={goalTab === 'month' ? '1' : '0'}>
-                <button
-                  type="button"
-                  className={`goal-modal__tab${goalTab === 'year' ? ' goal-modal__tab--active' : ''}`}
-                  onClick={() => setGoalTab('year')}
-                >
-                  연도별
-                </button>
-                <button
-                  type="button"
-                  className={`goal-modal__tab${goalTab === 'month' ? ' goal-modal__tab--active' : ''}`}
-                  onClick={() => setGoalTab('month')}
-                >
-                  월별
-                </button>
-              </div>
-              <button type="button" className="goal-modal__submit" onClick={openGoalFormModal}>
-                등록
-              </button>
-              <IconButton onClick={() => setIsGoalModalOpen(false)} aria-label="닫기">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                  <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                </svg>
-              </IconButton>
-            </div>
-            <div className="modal__body">
-              <div className="goal-modal__list">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>기간</th>
-                      <th>목표금액(원)</th>
-                      <th>관리</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {goalRows.length === 0 && (
-                      <tr className="data-table__row data-table__row--empty">
-                        <td colSpan={3} className="data-table__empty">데이터가 없습니다.</td>
-                      </tr>
-                    )}
-                    {goalRows.map((goal) => (
-                      <tr key={goal.id} className="data-table__row" onClick={() => openGoalEditModal(goal)}>
-                        <td>{formatGoalPeriod(goal)}</td>
-                        <td>{formatAmount(goal.amount)}</td>
-                        <td className="goal-modal__actions">
-                          <button
-                            type="button"
-                            className="goal-modal__action goal-modal__action--ghost"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              deleteGoal(goal.id);
-                            }}
-                          >
-                            <img src={trashIcon} alt="삭제" className="goal-modal__trash" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <GoalModal
+        isOpen={isGoalModalOpen}
+        goalTab={goalTab}
+        goalRows={goalRows}
+        trashIcon={trashIcon}
+        setGoalTab={setGoalTab}
+        openGoalFormModal={openGoalFormModal}
+        openGoalEditModal={openGoalEditModal}
+        deleteGoal={deleteGoal}
+        formatGoalPeriod={formatGoalPeriod}
+        formatAmount={formatAmount}
+        closeModal={() => setIsGoalModalOpen(false)}
+      />
 
-      {isGoalFormOpen && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={() => setIsGoalFormOpen(false)} />
-          <div className="modal__content modal__content--white goal-modal goal-modal--compact" role="dialog" aria-modal="true">
-            <div className="modal__header">
-              <h3>목표 등록</h3>
-              <IconButton onClick={() => setIsGoalFormOpen(false)} aria-label="닫기">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                  <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                </svg>
-              </IconButton>
-            </div>
-            <div className="modal__body">
-              <div className="goal-modal__grid">
-                <label className="project-form__field">
-                  <input
-                    type="text"
-                    value={goalFormInput.period}
-                    onChange={handleGoalFormChange('period')}
-                    placeholder=" "
-                  />
-                  <span>{goalTab === 'year' ? '연도' : '연도-월'}</span>
-                </label>
-                <label className="project-form__field">
-                  <input
-                    type="text"
-                    value={goalFormInput.amount}
-                    onChange={handleGoalFormChange('amount')}
-                    placeholder=" "
-                  />
-                  <span>금액(원)</span>
-                </label>
-              </div>
-              <div className="form-actions modal__actions">
-                <button type="button" className="project-form__submit" onClick={saveGoalForm}>
-                  저장
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <GoalFormModal
+        isOpen={isGoalFormOpen}
+        goalTab={goalTab}
+        goalFormInput={goalFormInput}
+        handleGoalFormChange={handleGoalFormChange}
+        saveGoalForm={saveGoalForm}
+        closeModal={() => setIsGoalFormOpen(false)}
+      />
 
-      {isDealModalOpen && editingDeal && (
-        <div className="modal">
-          <div className="modal__overlay" onClick={() => setIsDealModalOpen(false)} />
-          <div className={`modal__content modal__content--white deal-modal__content ${modalSizeClass}`} role="dialog" aria-modal="true">
-            <div className="modal__header">
-              <div className="modal__title-row modal__title-row--spaced">
-                <h3>딜 수정</h3>
-                <IconButton onClick={() => setIsDealModalOpen(false)} aria-label="닫기">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />
-                    <path d="M19 6.4 6.4 19l-1.4-1.4L17.6 5 19 6.4z" />
-                  </svg>
-                </IconButton>
-              </div>
-            </div>
-            <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
-              {showLeadPanel && (
-                <div className="deal-modal__lead">
-                  <div className="deal-modal__lead-form">
-                    {leadModalFields.map((field) => {
-                      const rawValue =
-                        field.name === 'lead_code'
-                          ? formData.lead_code || formData.lead_id || dealLeadInfo.lead_code || dealLeadInfo.id
-                          : dealLeadInfo[field.name];
-                      return (
-                        <label className="project-form__field" key={field.name}>
-                          <input type="text" placeholder=" " value={rawValue ?? ''} data-filled={rawValue ? 'true' : 'false'} readOnly />
-                          <span>{field.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              <form className="project-form deal-modal__form" onSubmit={(event) => {
-                event.preventDefault();
-                submitDeal();
-              }}>
-                {dealFields.map((field) => {
-                  const stageValue = formData.stage || '';
-                  if (showLeadPanel && field.name === 'lead_id') {
-                    return null;
-                  }
-                  if (stageValue === '실주') {
-                    if (
-                      ['expected_amount', 'expected_close_date', 'won_date', 'next_action_date', 'next_action_content'].includes(
-                        field.name
-                      )
-                    ) {
-                      return null;
-                    }
-                  }
-                  if (stageValue && stageValue !== '실주' && field.name === 'loss_reason') {
-                    return null;
-                  }
-                  return (
-                    <label
-                      className={`project-form__field${field.type === 'select' ? ' project-form__field--has-clear' : ''}`}
-                      htmlFor={`dashboard-deal-${field.name}`}
-                      key={field.name}
-                    >
-                      {field.type === 'textarea' ? (
-                        <textarea
-                          id={`dashboard-deal-${field.name}`}
-                          name={field.name}
-                          rows="4"
-                          placeholder=" "
-                          value={formData[field.name] ?? ''}
-                          onChange={(event) => handleChange(field.name, event.target.value)}
-                        />
-                      ) : field.type === 'select' ? (
-                        <>
-                          {field.name === 'lead_id' ? (
-                            <input
-                              id={`dashboard-deal-${field.name}`}
-                              name={field.name}
-                              type="text"
-                              placeholder=" "
-                              value={formData.lead_code || formData.lead_id || ''}
-                              data-filled={formData.lead_code || formData.lead_id ? 'true' : 'false'}
-                              readOnly
-                            />
-                          ) : (
-                            <>
-                              <select
-                                id={`dashboard-deal-${field.name}`}
-                                name={field.name}
-                                value={formData[field.name] ?? ''}
-                                data-filled={formData[field.name] ? 'true' : 'false'}
-                                onChange={(event) => handleChange(field.name, event.target.value)}
-                              >
-                                <option value="" hidden />
-                                {(() => {
-                                  if (field.name !== 'stage') {
-                                    return field.options?.map((option) => (
-                                      <option key={option} value={option}>
-                                        {option}
-                                      </option>
-                                    ));
-                                  }
-                                  const currentValue = formData[field.name] ?? '';
-                                  const mergedOptions = Array.from(
-                                    new Set([currentValue, ...(field.options || [])])
-                                  ).filter(Boolean);
-                                  return mergedOptions.map((option) => (
-                                    <option key={option} value={option}>
-                                      {option}
-                                    </option>
-                                  ));
-                                })()}
-                              </select>
-                              {formData[field.name] && (
-                                <button
-                                  className="select-clear"
-                                  type="button"
-                                  aria-label={`${field.label} 초기화`}
-                                  onClick={() => handleChange(field.name, '')}
-                                >
-                                  ×
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <input
-                          id={`dashboard-deal-${field.name}`}
-                          name={field.name}
-                          type={field.name === 'expected_amount' ? 'text' : field.type}
-                          inputMode={field.name === 'expected_amount' ? 'numeric' : undefined}
-                          placeholder=" "
-                          value={formData[field.name] ?? ''}
-                          data-filled={field.type === 'date' ? (formData[field.name] ? 'true' : 'false') : undefined}
-                          onChange={(event) => {
-                            if (field.type === 'date') {
-                              event.target.dataset.filled = event.target.value ? 'true' : 'false';
-                              handleChange(field.name, event.target.value);
-                              return;
-                            }
-                            if (field.name === 'expected_amount') {
-                              const raw = event.target.value.replace(/[^\d]/g, '');
-                              const formatted = raw ? Number(raw).toLocaleString('ko-KR') : '';
-                              handleChange(field.name, formatted);
-                              return;
-                            }
-                            handleChange(field.name, event.target.value);
-                          }}
-                        />
-                      )}
-                      <span>{field.label}</span>
-                    </label>
-                  );
-                })}
-                <div className="form-actions modal__actions">
-                  <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
-                    저장
-                  </button>
-                  <button className="project-form__submit project-form__submit--danger" type="button" onClick={handleDelete}>
-                    삭제
-                  </button>
-                </div>
-              </form>
-              {showLogPanel && (
-                <div className="deal-modal__logs">
-                  <div className="deal-modal__logs-header">
-                    <h4 className="deal-modal__logs-title">활동기록</h4>
-                  </div>
-                  <div className="deal-modal__logs-list">
-                    {dealLogs.length === 0 && <p className="table__status">기록이 없습니다.</p>}
-                    {dealLogs.map((log) => (
-                      <div
-                        className="deal-modal__log-item"
-                        key={log.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => applyLogToForm(log)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            applyLogToForm(log);
-                          }
-                        }}
-                      >
-                        <div className="deal-modal__log-header">
-                          <span className="deal-modal__log-date">{formatDate(log.activity_date)}</span>
-                        </div>
-                        <div className="deal-modal__log-row">
-                          <span className="deal-modal__log-label">담당자</span>
-                          <span className="deal-modal__log-value">{log.manager || '-'}</span>
-                        </div>
-                        <div className="deal-modal__log-row">
-                          <span className="deal-modal__log-label">프로젝트명</span>
-                          <span className="deal-modal__log-value">{log.project_name || '-'}</span>
-                        </div>
-                        <div className="deal-modal__log-row">
-                          <span className="deal-modal__log-label">예상금액</span>
-                          <span className="deal-modal__log-value">{formatAmount(log.expected_amount) || '-'}</span>
-                        </div>
-                        <div className="deal-modal__log-row">
-                          <span className="deal-modal__log-label">다음액션일</span>
-                          <span className="deal-modal__log-value">{formatDate(log.next_action_date) || '-'}</span>
-                        </div>
-                        <div className="deal-modal__log-row">
-                          <span className="deal-modal__log-label">다음액션내용</span>
-                          <span className="deal-modal__log-value">{log.next_action_content || '-'}</span>
-                        </div>
-                        <div className="deal-modal__log-row">
-                          <span className="deal-modal__log-label">담당자(영업)</span>
-                          <span className="deal-modal__log-value">{log.sales_owner || '-'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <DealEditModal
+        isOpen={isDealModalOpen}
+        editingDeal={editingDeal}
+        modalSizeClass={modalSizeClass}
+        modalLayoutClass={modalLayoutClass}
+        showLeadPanel={showLeadPanel}
+        showLogPanel={showLogPanel}
+        leadModalFields={leadModalFields}
+        dealLeadInfo={dealLeadInfo}
+        dealFields={dealFields}
+        formData={formData}
+        formStatus={formStatus}
+        dealLogs={dealLogs}
+        handleChange={handleChange}
+        submitDeal={submitDeal}
+        handleDelete={handleDelete}
+        applyLogToForm={applyLogToForm}
+        closeModal={() => setIsDealModalOpen(false)}
+        formatDate={formatDate}
+        formatAmount={formatAmount}
+      />
       <ConfirmDialog
         open={confirmState.open}
         message={confirmState.message}
