@@ -8,6 +8,7 @@ import Loading from '../../components/feedback/Loading';
 import LeadModal from './components/LeadModal';
 import mailIcon from '../../assets/icon/mail.svg';
 import './leads.css';
+import { fetchActivityLogs } from '../../api/activities.api';
 import {
   fetchLeads,
   createLead,
@@ -139,6 +140,7 @@ function LeadsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
+  const [activityLogs, setActivityLogs] = useState([]);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('전체');
@@ -243,6 +245,15 @@ function LeadsPage() {
     } catch (error) {
       console.error(error);
       showToast('설정 값을 불러오지 못했습니다.');
+    }
+  };
+
+  const loadActivityLogs = async () => {
+    try {
+      const data = await fetchActivityLogs();
+      setActivityLogs(data.logs || []);
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -356,6 +367,7 @@ function LeadsPage() {
     setFormStatus('');
     setFormErrorMessage('');
     setIsModalOpen(true);
+    loadActivityLogs();
   };
 
   const closeModal = () => {
@@ -365,6 +377,25 @@ function LeadsPage() {
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const leadLogs = useMemo(() => {
+    if (!editingId) {
+      return [];
+    }
+    return activityLogs
+      .filter((log) => String(log.lead_id) === String(editingId))
+      .slice()
+      .sort((a, b) => {
+        const aTime = a.activity_date ? new Date(a.activity_date).getTime() : 0;
+        const bTime = b.activity_date ? new Date(b.activity_date).getTime() : 0;
+        if (aTime !== bTime) {
+          return aTime - bTime;
+        }
+        const aId = Number(a.id) || 0;
+        const bId = Number(b.id) || 0;
+        return aId - bId;
+      });
+  }, [activityLogs, editingId]);
 
   const showToast = (message, type = 'success') => {
     setToastType(type);
@@ -898,7 +929,10 @@ function LeadsPage() {
         customerFields={customerFields}
         contactDetailFields={contactDetailFields}
         leadFields={leadFields}
+        leadLogs={leadLogs}
         formStatus={formStatus}
+        formatDate={formatDate}
+        formatDateTime={formatDateTime}
         handleSubmit={handleSubmit}
         closeModal={closeModal}
         setCustomerListOpen={setCustomerListOpen}
