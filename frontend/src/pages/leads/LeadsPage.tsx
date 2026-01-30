@@ -4,6 +4,7 @@ import '../../components/dialogs/modal.css';
 import Pagination from '../../components/common/Pagination';
 import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
+import Loading from '../../components/feedback/Loading';
 import './leads.css';
 import {
   fetchLeads,
@@ -730,7 +731,7 @@ function LeadsPage() {
       </section>
       <section className="content__section content__section--single">
         <div className="content__card content__card--wide">
-          {status === 'loading' && <p className="table__status">불러오는 중...</p>}
+          {status === 'loading' && <Loading />}
           {status === 'error' && null}
           {status === 'ready' && (
             <div className="table__wrapper">

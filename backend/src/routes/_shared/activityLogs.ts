@@ -60,6 +60,8 @@ export async function getDealLogPayload(dealId, transaction) {
     lead_id: deal.lead_id,
     manager: lead?.leadContact?.name || primary?.name || '',
     sales_owner: lead?.customer_owner || '',
+    project_name: deal.project_name || '',
+    expected_amount: deal.expected_amount ?? null,
     next_action_date: deal.next_action_date || null,
     next_action_content: deal.next_action_content || ''
   };

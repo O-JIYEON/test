@@ -12,6 +12,7 @@ import {
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
+import Loading from '../../components/feedback/Loading';
 import Pagination from '../../components/common/Pagination';
 import IconButton from '../../components/common/IconButton';
 import { formatKstDate, formatKstDateTime } from '../../utils/date';
@@ -431,7 +432,7 @@ function CustomersPage() {
                 등록
               </button>
             </div>
-          {status === 'loading' && <p className="table__status">불러오는 중...</p>}
+          {status === 'loading' && <Loading />}
           {status === 'error' && null}
           {status === 'ready' && filteredCustomers.length === 0 && (
             <p className="table__status">데이터가 없습니다.</p>
@@ -555,9 +556,7 @@ function CustomersPage() {
               </button>
             </div>
           {!selectedCustomerId && <p className="table__status">고객사를 선택해 주세요.</p>}
-          {selectedCustomerId && contactsStatus === 'loading' && (
-            <p className="table__status">불러오는 중...</p>
-          )}
+          {selectedCustomerId && contactsStatus === 'loading' && <Loading />}
           {selectedCustomerId && contactsStatus === 'error' && null}
           {selectedCustomerId && contactsStatus === 'ready' && filteredContacts.length === 0 && (
             <p className="table__status">데이터가 없습니다.</p>

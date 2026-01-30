@@ -14,6 +14,7 @@ import { fetchLookupValues } from '../../api/lookup.api';
 import Pagination from '../../components/common/Pagination';
 import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
+import Loading from '../../components/feedback/Loading';
 import './deals.css';
 import './dealModal.css';
 import dayjs, {
@@ -392,6 +393,20 @@ function DealsPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const applyLogToForm = (log) => {
+    setFormData((prev) => ({
+      ...prev,
+      project_name: log.project_name ?? prev.project_name ?? '',
+      stage: log.deal_stage ?? prev.stage ?? '',
+      expected_amount:
+        log.expected_amount !== null && log.expected_amount !== undefined && log.expected_amount !== ''
+          ? Number(String(log.expected_amount).replace(/,/g, '')).toLocaleString('ko-KR')
+          : prev.expected_amount ?? '',
+      next_action_date: formatDate(log.next_action_date) || '',
+      next_action_content: log.next_action_content ?? ''
+    }));
+  };
+
   const submitDeal = async () => {
     setFormStatus('saving');
     try {
@@ -677,7 +692,7 @@ function DealsPage() {
           <div className="filter-row__actions" />
         </div>
         <div className="content__card content__card--wide">
-          {status === 'loading' && <p className="table__status">불러오는 중...</p>}
+          {status === 'loading' && <Loading />}
           {status === 'error' && null}
           {status === 'ready' && (
             <div className="table__wrapper">
@@ -1025,7 +1040,19 @@ function DealsPage() {
                   ) : (
                     <div className="deal-modal__logs-list">
                       {dealLogs.map((log) => (
-                        <div className="deal-modal__log-item" key={log.id}>
+                        <div
+                          className="deal-modal__log-item"
+                          key={log.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => applyLogToForm(log)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              applyLogToForm(log);
+                            }
+                          }}
+                        >
                           <div className="deal-modal__log-header">
                             <span className="deal-modal__log-date">{formatDate(log.activity_date)}</span>
                             {log.deal_stage && (
@@ -1035,6 +1062,14 @@ function DealsPage() {
                           <div className="deal-modal__log-row">
                             <span className="deal-modal__log-label">담당자</span>
                             <span className="deal-modal__log-value">{log.manager || '-'}</span>
+                          </div>
+                          <div className="deal-modal__log-row">
+                            <span className="deal-modal__log-label">프로젝트명</span>
+                            <span className="deal-modal__log-value">{log.project_name || '-'}</span>
+                          </div>
+                          <div className="deal-modal__log-row">
+                            <span className="deal-modal__log-label">예상금액</span>
+                            <span className="deal-modal__log-value">{formatAmount(log.expected_amount) || '-'}</span>
                           </div>
                           <div className="deal-modal__log-row">
                             <span className="deal-modal__log-label">다음액션일</span>

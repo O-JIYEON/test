@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
+import Loading from '../../components/feedback/Loading';
 import IconButton from '../../components/common/IconButton';
 import trashIcon from '../../assets/icon/trash.svg';
 import penLineIcon from '../../assets/icon/penLine.svg';
@@ -1212,6 +1213,20 @@ function DashboardPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const applyLogToForm = (log) => {
+    setFormData((prev) => ({
+      ...prev,
+      project_name: log.project_name ?? prev.project_name ?? '',
+      stage: log.deal_stage ?? prev.stage ?? '',
+      expected_amount:
+        log.expected_amount !== null && log.expected_amount !== undefined && log.expected_amount !== ''
+          ? Number(String(log.expected_amount).replace(/,/g, '')).toLocaleString('ko-KR')
+          : prev.expected_amount ?? '',
+      next_action_date: formatDate(log.next_action_date) || '',
+      next_action_content: log.next_action_content ?? ''
+    }));
+  };
+
   const submitDeal = async () => {
     if (!editingDeal) {
       return;
@@ -1533,6 +1548,10 @@ function DashboardPage() {
     <>
       <section className="content__section content__section--single">
         <div className="dashboard">
+          {status === 'loading' ? (
+            <Loading />
+          ) : (
+          <>
           <div className="dashboard__overview">
             <div className="dashboard__overview-cards dashboard__overview-cards--hero">
               {overviewStats.map((item) => (
@@ -1791,6 +1810,8 @@ function DashboardPage() {
               </div>
             </div>
           </div>
+          </>
+          )}
         </div>
       </section>
       {isSummaryModalOpen && (
@@ -2282,13 +2303,33 @@ function DashboardPage() {
                   <div className="deal-modal__logs-list">
                     {dealLogs.length === 0 && <p className="table__status">기록이 없습니다.</p>}
                     {dealLogs.map((log) => (
-                      <div className="deal-modal__log-item" key={log.id}>
+                      <div
+                        className="deal-modal__log-item"
+                        key={log.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => applyLogToForm(log)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            applyLogToForm(log);
+                          }
+                        }}
+                      >
                         <div className="deal-modal__log-header">
                           <span className="deal-modal__log-date">{formatDate(log.activity_date)}</span>
                         </div>
                         <div className="deal-modal__log-row">
                           <span className="deal-modal__log-label">담당자</span>
                           <span className="deal-modal__log-value">{log.manager || '-'}</span>
+                        </div>
+                        <div className="deal-modal__log-row">
+                          <span className="deal-modal__log-label">프로젝트명</span>
+                          <span className="deal-modal__log-value">{log.project_name || '-'}</span>
+                        </div>
+                        <div className="deal-modal__log-row">
+                          <span className="deal-modal__log-label">예상금액</span>
+                          <span className="deal-modal__log-value">{formatAmount(log.expected_amount) || '-'}</span>
                         </div>
                         <div className="deal-modal__log-row">
                           <span className="deal-modal__log-label">다음액션일</span>

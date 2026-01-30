@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchActivityLogs } from '../../api/activities.api';
 import Pagination from '../../components/common/Pagination';
 import Toast from '../../components/feedback/Toast';
+import Loading from '../../components/feedback/Loading';
 import { formatKstDateTime } from '../../utils/date';
 import dayjs from '../../utils/date';
 import './activities.css';
@@ -11,6 +12,8 @@ const columns = [
   { key: 'deal_code', label: 'Deal Id' },
   { key: 'activity_date', label: '활동일' },
   { key: 'company', label: '회사명' },
+  { key: 'project_name', label: '프로젝트/건명' },
+  { key: 'expected_amount', label: '예상금액(원)' },
   { key: 'manager', label: '담당자' },
   { key: 'next_action_date', label: '다음액션일' },
   { key: 'next_action_content', label: '다음액션내용' },
@@ -19,6 +22,16 @@ const columns = [
 ];
 
 const formatDate = (value) => formatKstDateTime(value);
+const formatAmount = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return '-';
+  }
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) {
+    return '-';
+  }
+  return `${numeric.toLocaleString('ko-KR')}원`;
+};
 
 function ActivitiesPage() {
   const [logs, setLogs] = useState([]);
@@ -134,7 +147,13 @@ function ActivitiesPage() {
     const company = String(log.company ?? '').toLowerCase();
     const dealCode = String(log.deal_code ?? '').toLowerCase();
     const leadCode = String(log.lead_code ?? '').toLowerCase();
-    return company.includes(query) || dealCode.includes(query) || leadCode.includes(query);
+    const projectName = String(log.project_name ?? '').toLowerCase();
+    return (
+      company.includes(query) ||
+      dealCode.includes(query) ||
+      leadCode.includes(query) ||
+      projectName.includes(query)
+    );
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
@@ -175,7 +194,7 @@ function ActivitiesPage() {
           </form>
         </div>
         <div className="content__card content__card--wide">
-          {status === 'loading' && <p className="table__status">불러오는 중...</p>}
+          {status === 'loading' && <Loading />}
           {status === 'error' && null}
           {status === 'ready' && (
             <div className="table__wrapper">
@@ -224,6 +243,9 @@ function ActivitiesPage() {
                           const value = log[column.key] || '';
                           const cleaned = value.split(' / 딜단계 변경:')[0].trim();
                           return <td key={column.key}>{cleaned || '-'}</td>;
+                        }
+                        if (column.key === 'expected_amount') {
+                          return <td key={column.key}>{formatAmount(log.expected_amount)}</td>;
                         }
                         if (column.key === 'deal_stage') {
                           return <td key={column.key}>{log.deal_stage || '-'}</td>;

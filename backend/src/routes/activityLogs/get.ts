@@ -20,7 +20,12 @@ export async function getActivityLogs(req, res) {
           attributes: ['lead_code', 'customer_id', 'deleted_at'],
           include: [{ model: Customer, as: 'customer', required: false, attributes: ['company'] }]
         },
-        { model: Deal, as: 'deal', required: false, attributes: ['deal_code', 'deleted_at'] }
+        {
+          model: Deal,
+          as: 'deal',
+          required: false,
+          attributes: ['deal_code', 'deleted_at']
+        }
       ],
       order: [['id', 'DESC']],
       raw: true,
@@ -39,6 +44,8 @@ export async function getActivityLogs(req, res) {
       next_action_content: log.next_action_content,
       lead_code: log.lead?.lead_code || null,
       deal_code: log.deal?.deal_code || null,
+      project_name: log.project_name || null,
+      expected_amount: log.expected_amount ?? null,
       company: log.lead?.customer?.company || null
     }));
 

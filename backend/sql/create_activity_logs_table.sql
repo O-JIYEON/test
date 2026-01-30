@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS `activity_logs` (
   `manager` VARCHAR(255),
   `sales_owner` VARCHAR(255),
   `deal_stage` VARCHAR(255),
+  `project_name` VARCHAR(255),
+  `expected_amount` BIGINT,
   `next_action_date` DATE,
   `next_action_content` TEXT,
   `deleted_at` DATETIME,
