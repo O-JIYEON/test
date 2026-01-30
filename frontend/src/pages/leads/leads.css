@@ -13,8 +13,50 @@
 .lead-form__column {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   overflow: visible;
+}
+
+.lead-form__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.lead-form__footer .project-form__submit {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.lead-form__grid {
+  gap: 28px;
+}
+
+.lead-form .project-form__field {
+  color: var(--color-slate-100);
+}
+
+.lead-form .project-form__field span {
+  color: var(--color-slate-300);
+}
+
+.lead-form .project-form__field input,
+.lead-form .project-form__field textarea,
+.lead-form .project-form__field select {
+  background: var(--color-slate-800);
+  border-color: rgba(148, 163, 184, 0.55);
+  font-size: 1rem;
+}
+
+.lead-form .project-form__field input:focus,
+.lead-form .project-form__field textarea:focus,
+.lead-form .project-form__field select:focus {
+  border-color: rgba(125, 211, 252, 0.6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.lead-form .lead-customer-readonly input {
+  color: var(--color-slate-50);
 }
 
 
@@ -177,4 +219,27 @@ html[data-theme='light'] .lead-customer-select__option--active {
 
 html[data-theme='light'] .lead-customer-select__empty {
   color: var(--color-slate-500);
+}
+
+html[data-theme='light'] .lead-form .project-form__field {
+  color: var(--color-slate-900);
+}
+
+html[data-theme='light'] .lead-form .project-form__field span {
+  color: var(--color-slate-500);
+}
+
+html[data-theme='light'] .lead-form .project-form__field input,
+html[data-theme='light'] .lead-form .project-form__field textarea,
+html[data-theme='light'] .lead-form .project-form__field select {
+  background: var(--color-white);
+  border-color: rgba(148, 163, 184, 0.45);
+  color: var(--color-slate-900);
+}
+
+html[data-theme='light'] .lead-form .project-form__field input:focus,
+html[data-theme='light'] .lead-form .project-form__field textarea:focus,
+html[data-theme='light'] .lead-form .project-form__field select:focus {
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }

@@ -60,7 +60,14 @@ function DealEditModal({
             </IconButton>
           </div>
         </div>
-        <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
+        <form
+          className="project-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            submitDeal();
+          }}
+        >
+          <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
           {showLeadPanel && (
             <div className="deal-modal__lead">
               <div className="deal-modal__lead-form">
@@ -85,13 +92,7 @@ function DealEditModal({
               </div>
             </div>
           )}
-          <form
-            className="project-form deal-modal__form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              submitDeal();
-            }}
-          >
+          <div className="deal-modal__form">
             {dealFields.map((field) => {
               const stageValue = formData.stage || '';
               if (showLeadPanel && field.name === 'lead_id') {
@@ -205,15 +206,7 @@ function DealEditModal({
                 </label>
               );
             })}
-            <div className="form-actions modal__actions">
-              <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
-                저장
-              </button>
-              <button className="project-form__submit project-form__submit--danger" type="button" onClick={handleDelete}>
-                삭제
-              </button>
-            </div>
-          </form>
+          </div>
           {showLogPanel && (
             <div className="deal-modal__logs">
               <div className="deal-modal__logs-header">
@@ -267,7 +260,18 @@ function DealEditModal({
               </div>
             </div>
           )}
-        </div>
+          </div>
+          <div className="modal__footer">
+            <div className="form-actions modal__actions">
+              <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
+                저장
+              </button>
+              <button className="project-form__submit project-form__submit--danger" type="button" onClick={handleDelete}>
+                삭제
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

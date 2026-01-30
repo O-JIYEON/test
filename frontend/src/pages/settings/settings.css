@@ -1,1 +1,5 @@
-/* Page styles for SettingsPage */
+.settings-value-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

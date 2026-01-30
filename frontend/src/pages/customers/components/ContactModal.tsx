@@ -42,35 +42,39 @@ function ContactModal({
             </IconButton>
           </div>
         </div>
-        <form className="project-form modal__body" onSubmit={handleSubmit}>
-          {contactFields.map((field) => (
-            <label className="project-form__field" htmlFor={`contact-${field.name}`} key={field.name}>
-              <input
-                id={`contact-${field.name}`}
-                name={field.name}
-                type={field.type}
-                placeholder=" "
-                value={contactFormData[field.name] ?? ''}
-                onChange={(event) => handleChange(field.name, event.target.value)}
-              />
-              <span>{field.label}</span>
-            </label>
-          ))}
-          <div className="form-actions modal__actions">
-            <button className="project-form__submit" type="submit" disabled={contactFormStatus === 'saving'}>
-              {contactEditingId ? '저장' : '등록'}
-            </button>
-            {contactEditingId && (
-              <button
-                className="project-form__submit project-form__submit--danger"
-                type="button"
-                onClick={handleDelete}
-              >
-                삭제
-              </button>
-            )}
+        <form className="project-form" onSubmit={handleSubmit}>
+          <div className="modal__body customer-modal__body">
+            {contactFields.map((field) => (
+              <label className="project-form__field" htmlFor={`contact-${field.name}`} key={field.name}>
+                <input
+                  id={`contact-${field.name}`}
+                  name={field.name}
+                  type={field.type}
+                  placeholder=" "
+                  value={contactFormData[field.name] ?? ''}
+                  onChange={(event) => handleChange(field.name, event.target.value)}
+                />
+                <span>{field.label}</span>
+              </label>
+            ))}
+            {contactErrorMessage && null}
           </div>
-          {contactErrorMessage && null}
+          <div className="modal__footer">
+            <div className="form-actions modal__actions">
+              <button className="project-form__submit" type="submit" disabled={contactFormStatus === 'saving'}>
+                {contactEditingId ? '저장' : '등록'}
+              </button>
+              {contactEditingId && (
+                <button
+                  className="project-form__submit project-form__submit--danger"
+                  type="button"
+                  onClick={handleDelete}
+                >
+                  삭제
+                </button>
+              )}
+            </div>
+          </div>
         </form>
       </div>
     </div>

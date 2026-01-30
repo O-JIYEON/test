@@ -80,9 +80,10 @@ function LeadModal({
             </IconButton>
           </div>
         </div>
-        <form className="project-form modal__body lead-form" onSubmit={handleSubmit}>
-          <div className="lead-form__grid">
-            <div className="lead-form__column">
+        <div className="modal__body lead-form">
+          <form id="lead-form" className="project-form lead-form__content" onSubmit={handleSubmit}>
+            <div className="lead-form__grid">
+              <div className="lead-form__column">
               <label
                 className="project-form__field lead-customer-select lead-customer-select--company"
                 htmlFor="lead-customer-search"
@@ -282,8 +283,8 @@ function LeadModal({
                   <span>{field.label}</span>
                 </label>
               ))}
-            </div>
-            <div className="lead-form__column">
+              </div>
+              <div className="lead-form__column">
               {leadFields.map((field) => (
                 <label
                   className={`project-form__field${
@@ -349,10 +350,13 @@ function LeadModal({
                   <span>{field.label}</span>
                 </label>
               ))}
+              </div>
             </div>
-          </div>
+          </form>
+        </div>
+        <div className="modal__footer lead-form__footer">
           <div className="form-actions modal__actions">
-            <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
+            <button className="project-form__submit" type="submit" form="lead-form" disabled={formStatus === 'saving'}>
               {editingId ? '저장' : '등록'}
             </button>
             {editingId && (
@@ -365,7 +369,7 @@ function LeadModal({
               </button>
             )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

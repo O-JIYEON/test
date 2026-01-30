@@ -27,10 +27,8 @@ ul {
 
 
 .project-form {
-  /* margin-top: 16px; */
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
 .filter-form {
@@ -823,9 +821,9 @@ html[data-theme='light'] .form-actions__reset {
 }
 
 html[data-theme='light'] .project-form__submit--danger {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fca5a5;
+  background: var(--color-red-500);
+  color: var(--color-white);
+  border-color: var(--color-red-500);
 }
 
 html[data-theme='light'] .project-form__submit {

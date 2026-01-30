@@ -43,60 +43,64 @@ function ValueModal({
             </IconButton>
           </div>
         </div>
-        <form className="project-form modal__body" onSubmit={handleSubmit}>
-          <label className="project-form__field" htmlFor="value-label">
-            <input
-              id="value-label"
-              name="label"
-              type="text"
-              placeholder=" "
-              value={valueForm.label}
-              onChange={(event) => setValueForm((prev) => ({ ...prev, label: event.target.value }))}
-            />
-            <span>값</span>
-          </label>
-          {isOwnerCategory && (
-            <label className="project-form__field" htmlFor="value-department">
+        <form className="project-form" onSubmit={handleSubmit}>
+          <div className="modal__body settings-value-modal__body">
+            <label className="project-form__field" htmlFor="value-label">
               <input
-                id="value-department"
-                name="department"
+                id="value-label"
+                name="label"
                 type="text"
                 placeholder=" "
-                value={valueForm.department}
-                onChange={(event) => setValueForm((prev) => ({ ...prev, department: event.target.value }))}
+                value={valueForm.label}
+                onChange={(event) => setValueForm((prev) => ({ ...prev, label: event.target.value }))}
               />
-              <span>부서</span>
+              <span>값</span>
             </label>
-          )}
-          {isPipelineCategory && (
-            <label className="project-form__field" htmlFor="value-probability">
+            {isOwnerCategory && (
+              <label className="project-form__field" htmlFor="value-department">
+                <input
+                  id="value-department"
+                  name="department"
+                  type="text"
+                  placeholder=" "
+                  value={valueForm.department}
+                  onChange={(event) => setValueForm((prev) => ({ ...prev, department: event.target.value }))}
+                />
+                <span>부서</span>
+              </label>
+            )}
+            {isPipelineCategory && (
+              <label className="project-form__field" htmlFor="value-probability">
+                <input
+                  id="value-probability"
+                  name="probability"
+                  type="number"
+                  step="0.01"
+                  placeholder=" "
+                  value={valueForm.probability}
+                  onChange={(event) => setValueForm((prev) => ({ ...prev, probability: event.target.value }))}
+                />
+                <span>확률</span>
+              </label>
+            )}
+            <label className="project-form__field" htmlFor="value-sort">
               <input
-                id="value-probability"
-                name="probability"
+                id="value-sort"
+                name="sort_order"
                 type="number"
-                step="0.01"
                 placeholder=" "
-                value={valueForm.probability}
-                onChange={(event) => setValueForm((prev) => ({ ...prev, probability: event.target.value }))}
+                value={valueForm.sort_order}
+                onChange={(event) => setValueForm((prev) => ({ ...prev, sort_order: event.target.value }))}
               />
-              <span>확률</span>
+              <span>정렬</span>
             </label>
-          )}
-          <label className="project-form__field" htmlFor="value-sort">
-            <input
-              id="value-sort"
-              name="sort_order"
-              type="number"
-              placeholder=" "
-              value={valueForm.sort_order}
-              onChange={(event) => setValueForm((prev) => ({ ...prev, sort_order: event.target.value }))}
-            />
-            <span>정렬</span>
-          </label>
-          <div className="form-actions modal__actions">
-            <button className="project-form__submit" type="submit">
-              저장
-            </button>
+          </div>
+          <div className="modal__footer">
+            <div className="form-actions modal__actions">
+              <button className="project-form__submit" type="submit">
+                저장
+              </button>
+            </div>
           </div>
         </form>
       </div>

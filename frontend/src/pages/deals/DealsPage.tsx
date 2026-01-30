@@ -247,7 +247,7 @@ function DealsPage() {
       { name: 'expected_amount', label: '예상금액(원)', type: 'number' },
       { name: 'expected_close_date', label: '예상수주일', type: 'date' },
       { name: 'next_action_date', label: '다음액션일', type: 'date' },
-      { name: 'next_action_content', label: '다음액션내용', type: 'textarea' },
+      { name: 'next_action_content', label: '다음액션내용', type: 'text' },
       { name: 'loss_reason', label: '실주사유', type: 'select', options: lossReasonOptions }
     ],
     [stageOptions]

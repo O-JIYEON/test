@@ -34,22 +34,26 @@ function CategoryModal({
             </IconButton>
           </div>
         </div>
-        <form className="project-form modal__body" onSubmit={handleSubmit}>
-          <label className="project-form__field" htmlFor="category-label">
-            <input
-              id="category-label"
-              name="label"
-              type="text"
-              placeholder=" "
-              value={categoryForm.label}
-              onChange={(event) => setCategoryForm((prev) => ({ ...prev, label: event.target.value }))}
-            />
-            <span>이름</span>
-          </label>
-          <div className="form-actions modal__actions">
-            <button className="project-form__submit" type="submit">
-              저장
-            </button>
+        <form className="project-form" onSubmit={handleSubmit}>
+          <div className="modal__body">
+            <label className="project-form__field" htmlFor="category-label">
+              <input
+                id="category-label"
+                name="label"
+                type="text"
+                placeholder=" "
+                value={categoryForm.label}
+                onChange={(event) => setCategoryForm((prev) => ({ ...prev, label: event.target.value }))}
+              />
+              <span>이름</span>
+            </label>
+          </div>
+          <div className="modal__footer">
+            <div className="form-actions modal__actions">
+              <button className="project-form__submit" type="submit">
+                저장
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -68,7 +68,8 @@ function DealModal({
             </IconButton>
           </div>
         </div>
-        <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
+        <form className="project-form" onSubmit={handleSubmit}>
+          <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
           {showLeadPanel && (
             <div className="deal-modal__lead">
               {dealLeadInfo ? (
@@ -97,7 +98,7 @@ function DealModal({
               )}
             </div>
           )}
-          <form className="project-form deal-modal__form" onSubmit={handleSubmit}>
+            <div className="deal-modal__form">
             {dealFields.map((field) => {
               const stageValue = formData.stage || '';
               if (showLeadPanel && field.name === 'lead_id') {
@@ -222,22 +223,8 @@ function DealModal({
                 </label>
               );
             })}
-            <div className="form-actions modal__actions">
-              <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
-                {editingId ? '저장' : '등록'}
-              </button>
-              {editingId && (
-                <button
-                  className="project-form__submit project-form__submit--danger"
-                  type="button"
-                  onClick={handleDelete}
-                >
-                  삭제
-                </button>
-              )}
-            </div>
             {errorMessage && null}
-          </form>
+            </div>
           {showLogPanel && (
             <div className="deal-modal__logs">
               <div className="deal-modal__logs-header">
@@ -301,7 +288,24 @@ function DealModal({
               )}
             </div>
           )}
-        </div>
+          </div>
+          <div className="modal__footer">
+            <div className="form-actions modal__actions">
+              <button className="project-form__submit" type="submit" disabled={formStatus === 'saving'}>
+                {editingId ? '저장' : '등록'}
+              </button>
+              {editingId && (
+                <button
+                  className="project-form__submit project-form__submit--danger"
+                  type="button"
+                  onClick={handleDelete}
+                >
+                  삭제
+                </button>
+              )}
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );
