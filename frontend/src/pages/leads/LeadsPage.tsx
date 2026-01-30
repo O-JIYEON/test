@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
 import Pagination from '../../components/common/pagination';
-import IconButton from '../../components/common/iconButton';
+import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
 import './leads.css';
@@ -296,6 +296,7 @@ function LeadsPage() {
     setFormData({
       customer_id: defaultProjectId,
       contact_id: '',
+      lead_code: '',
       customer_owner: '',
       source: sourceOptions[0] || '',
       product_line: productLineOptions[0] || '',
@@ -331,6 +332,7 @@ function LeadsPage() {
     setFormData({
       customer_id: lead.customer_id || '',
       contact_id: lead.contact_id || '',
+      lead_code: lead.lead_code || '',
       customer_owner: lead.customer_owner || '',
       source: lead.source || sourceOptions[0] || '',
       product_line: lead.product_line || productLineOptions[0] || '',
@@ -897,7 +899,7 @@ function LeadsPage() {
           <div className="modal__content" role="dialog" aria-modal="true">
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
-                <h3>{editingId ? '리드 수정' : '리드 등록'}</h3>
+                <h3>{editingId ? formData.lead_code || editingId : '리드 등록'}</h3>
                 <IconButton onClick={closeModal} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />

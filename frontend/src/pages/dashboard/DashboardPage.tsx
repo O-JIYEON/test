@@ -5,7 +5,7 @@ import ConfirmDialog from '../../components/dialogs/ConfirmDialog';
 import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
-import IconButton from '../../components/common/iconButton';
+import IconButton from '../../components/common/IconButton';
 import trashIcon from '../../assets/icon/trash.svg';
 import penLineIcon from '../../assets/icon/penLine.svg';
 import { fetchDeals, updateDeal, deleteDeal } from '../../api/deals.api';

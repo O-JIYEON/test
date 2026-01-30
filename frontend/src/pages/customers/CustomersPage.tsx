@@ -14,7 +14,7 @@ import '../../components/dialogs/modal.css';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
 import Pagination from '../../components/common/pagination';
-import IconButton from '../../components/common/iconButton';
+import IconButton from '../../components/common/IconButton';
 import { formatKstDate, formatKstDateTime } from '../../utils/date';
 import './customers.css';
 

@@ -12,7 +12,7 @@ import { fetchLeads } from '../../api/leads.api';
 import { fetchActivityLogs } from '../../api/activities.api';
 import { fetchLookupValues } from '../../api/lookup.api';
 import Pagination from '../../components/common/pagination';
-import IconButton from '../../components/common/iconButton';
+import IconButton from '../../components/common/IconButton';
 import Toast from '../../components/feedback/Toast';
 import Loading from '../../components/feedback/Loading';
 import './deals.css';
@@ -340,6 +340,7 @@ function DealsPage() {
     setEditingId(null);
     setFormData({
       lead_id: '',
+      deal_code: '',
       project_name: '',
       stage: stageOptions[0],
       expected_amount: '',
@@ -359,6 +360,7 @@ function DealsPage() {
     const formattedExpectedAmount = formatAmount(deal.expected_amount);
     setFormData({
       lead_id: deal.lead_id ?? '',
+      deal_code: deal.deal_code ?? '',
       lead_code: deal.lead_code ?? '',
       project_name: deal.project_name || '',
       stage: deal.stage || '',
@@ -847,7 +849,7 @@ function DealsPage() {
           >
             <div className="modal__header">
               <div className="modal__title-row modal__title-row--spaced">
-                <h3>{editingId ? '딜 수정' : '딜 등록'}</h3>
+                <h3>{editingId ? formData.deal_code || editingId : '딜 등록'}</h3>
                 <IconButton onClick={closeModal} aria-label="닫기">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6.4 5l12.6 12.6-1.4 1.4L5 6.4 6.4 5z" />

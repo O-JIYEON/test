@@ -461,7 +461,6 @@ html[data-theme='light'] .lead-status-summary__value--won {
 
 .data-table th {
   font-weight: 700;
-  white-space: nowrap;
 }
 
 .data-table__row {
