@@ -133,6 +133,8 @@ function DealModal({
   }, [dealLogs, formatDate, formatDateTime, logFields]);
 
   const logsListRef = useRef<HTMLDivElement | null>(null);
+  const logsPanelRef = useRef<HTMLDivElement | null>(null);
+  const mainPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!showLogPanel) {
@@ -146,6 +148,31 @@ function DealModal({
       target.scrollTop = target.scrollHeight;
     });
   }, [showLogPanel, dealLogs.length, isOpen]);
+
+  useEffect(() => {
+    if (!showLogPanel) {
+      return;
+    }
+    const mainPanel = mainPanelRef.current;
+    const logsPanel = logsPanelRef.current;
+    if (!mainPanel || !logsPanel) {
+      return;
+    }
+    const updateHeight = () => {
+      const nextHeight = mainPanel.offsetHeight;
+      if (nextHeight) {
+        logsPanel.style.maxHeight = `${nextHeight}px`;
+      }
+    };
+    updateHeight();
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(updateHeight);
+      observer.observe(mainPanel);
+      return () => observer.disconnect();
+    }
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, [showLogPanel, isOpen]);
 
   return (
     <div className="modal">
@@ -164,37 +191,38 @@ function DealModal({
           </div>
         </div>
         <form className="project-form" onSubmit={handleSubmit}>
-          <div className={`modal__body deal-modal__body ${modalLayoutClass}`}>
-          {showLeadPanel && (
-            <div className="deal-modal__lead">
-              {dealLeadInfo ? (
-                <div className="deal-modal__lead-form">
-                  {leadModalLeftFields.map((field) => {
-                    const rawValue =
-                      field.name === 'lead_code'
-                        ? formData.lead_code || formData.lead_id || dealLeadInfo.lead_code || dealLeadInfo.id
-                        : dealLeadInfo[field.name];
-                    return (
-                      <label className="project-form__field" key={field.name}>
-                        <input
-                          type="text"
-                          placeholder=" "
-                          value={rawValue ?? ''}
-                          data-filled={rawValue ? 'true' : 'false'}
-                          readOnly
-                        />
-                        <span>{field.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="table__status">리드 정보를 찾을 수 없습니다.</p>
-              )}
-            </div>
-          )}
-            <div className="deal-modal__form">
-            {dealFields.map((field) => {
+          <div className={`modal__body deal-modal__body ${showLogPanel ? 'deal-modal__body--with-logs' : ''}`}>
+          <div className={`deal-modal__main ${modalLayoutClass}`} ref={mainPanelRef}>
+            {showLeadPanel && (
+              <div className="deal-modal__lead">
+                {dealLeadInfo ? (
+                  <div className="deal-modal__lead-form">
+                    {leadModalLeftFields.map((field) => {
+                      const rawValue =
+                        field.name === 'lead_code'
+                          ? formData.lead_code || formData.lead_id || dealLeadInfo.lead_code || dealLeadInfo.id
+                          : dealLeadInfo[field.name];
+                      return (
+                        <label className="project-form__field" key={field.name}>
+                          <input
+                            type="text"
+                            placeholder=" "
+                            value={rawValue ?? ''}
+                            data-filled={rawValue ? 'true' : 'false'}
+                            readOnly
+                          />
+                          <span>{field.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="table__status">리드 정보를 찾을 수 없습니다.</p>
+                )}
+              </div>
+            )}
+              <div className="deal-modal__form">
+              {dealFields.map((field) => {
               const stageValue = formData.stage || '';
               if (showLeadPanel && field.name === 'lead_id') {
                 return null;
@@ -319,9 +347,10 @@ function DealModal({
               );
             })}
             {errorMessage && null}
+              </div>
             </div>
           {showLogPanel && (
-            <div className="deal-modal__logs">
+            <div className="deal-modal__logs" ref={logsPanelRef}>
             
               {dealLogs.length === 0 ? (
                 <p className="table__status">기록이 없습니다.</p>

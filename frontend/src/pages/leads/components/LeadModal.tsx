@@ -77,6 +77,8 @@ function LeadModal({
 
   const showLogPanel = Boolean(editingId);
   const logsListRef = useRef<HTMLDivElement | null>(null);
+  const logsPanelRef = useRef<HTMLDivElement | null>(null);
+  const mainPanelRef = useRef<HTMLDivElement | null>(null);
 
   const logFields = useMemo(
     () => [
@@ -161,6 +163,31 @@ function LeadModal({
     });
   }, [showLogPanel, leadLogs.length, isOpen]);
 
+  useEffect(() => {
+    if (!showLogPanel) {
+      return;
+    }
+    const mainPanel = mainPanelRef.current;
+    const logsPanel = logsPanelRef.current;
+    if (!mainPanel || !logsPanel) {
+      return;
+    }
+    const updateHeight = () => {
+      const nextHeight = mainPanel.offsetHeight;
+      if (nextHeight) {
+        logsPanel.style.maxHeight = `${nextHeight}px`;
+      }
+    };
+    updateHeight();
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(updateHeight);
+      observer.observe(mainPanel);
+      return () => observer.disconnect();
+    }
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, [showLogPanel, isOpen]);
+
   return (
     <div className="modal">
       <div className="modal__overlay" onClick={closeModal} />
@@ -174,7 +201,7 @@ function LeadModal({
           </div>
         </div>
         <div className="modal__body lead-modal__body">
-          <div className="lead-modal__form lead-form">
+          <div className="lead-modal__form lead-form" ref={mainPanelRef}>
             <form id="lead-form" className="project-form lead-form__content" onSubmit={handleSubmit}>
               <div className="lead-form__grid">
                 <div className="lead-form__column">
@@ -449,7 +476,7 @@ function LeadModal({
             </form>
           </div>
           {showLogPanel && (
-            <div className="lead-modal__logs">
+            <div className="lead-modal__logs" ref={logsPanelRef}>
               {groupedLogs.length === 0 ? (
                 <p className="table__status">기록이 없습니다.</p>
               ) : (

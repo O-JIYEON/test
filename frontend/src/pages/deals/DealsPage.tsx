@@ -567,11 +567,7 @@ function DealsPage() {
 
   const showLeadPanel = Boolean(editingId && dealLeadInfo);
   const showLogPanel = Boolean(editingId);
-  const modalLayoutClass = showLeadPanel
-    ? 'deal-modal__body--triple'
-    : showLogPanel
-      ? 'deal-modal__body--double'
-      : 'deal-modal__body--single';
+  const modalLayoutClass = showLeadPanel ? 'deal-modal__body--double' : 'deal-modal__body--single';
   const modalSizeClass = showLeadPanel ? 'deal-modal__content--wide' : '';
 
   return (

@@ -133,8 +133,12 @@ html[data-theme='light'] .deal-status-badge--lost {
 .deal-modal__body {
   display: grid;
   gap: 20px;
-  align-items: stretch;
+  align-items: start;
   min-height: 0;
+}
+
+.deal-modal__body--with-logs {
+  grid-template-columns: minmax(0, 1fr) 380px;
 }
 
 .deal-modal__content {
@@ -146,15 +150,22 @@ html[data-theme='light'] .deal-status-badge--lost {
   width: min(1220px, 100%);
 }
 
-.deal-modal__body--triple {
+.deal-modal__main {
+  display: grid;
+  gap: 20px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.deal-modal__main.deal-modal__body--triple {
   grid-template-columns: 1fr 1.5fr 380px;
 }
 
-.deal-modal__body--double {
+.deal-modal__main.deal-modal__body--double {
   grid-template-columns: 1.5fr 1fr;
 }
 
-.deal-modal__body--single {
+.deal-modal__main.deal-modal__body--single {
   grid-template-columns: 1fr;
 }
 
@@ -185,7 +196,8 @@ html[data-theme='light'] .deal-status-badge--lost {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow-y: hidden;
+  align-self: flex-start;
+  overflow: hidden;
 }
 
 .deal-modal__logs-title {
