@@ -20,6 +20,7 @@ type LeadModalProps = {
   contactDetailFields: Array<any>;
   leadFields: Array<any>;
   leadLogs: Array<any>;
+  selectedLogId: string | number | null;
   formStatus: string;
   formatDate: (value: any) => string;
   formatDateTime: (value: any) => string;
@@ -34,6 +35,7 @@ type LeadModalProps = {
   handleContactInput: (value: string) => void;
   handleContactSelect: (contact: any) => void;
   handleChange: (name: string, value: any) => void;
+  applyLogToForm: (log: any) => void;
   handleDelete: () => void;
 };
 
@@ -55,6 +57,7 @@ function LeadModal({
   contactDetailFields,
   leadFields,
   leadLogs,
+  selectedLogId,
   formStatus,
   formatDate,
   formatDateTime,
@@ -69,6 +72,7 @@ function LeadModal({
   handleContactInput,
   handleContactSelect,
   handleChange,
+  applyLogToForm,
   handleDelete
 }: LeadModalProps) {
   if (!isOpen) {
@@ -488,11 +492,32 @@ function LeadModal({
                         {group.items.map((entry, entryIndex) => {
                           const isLastGroup = groupIndex === groupedLogs.length - 1;
                           const isLastEntry = entryIndex === group.items.length - 1;
+                          const isSelected = selectedLogId !== null && String(selectedLogId) === String(entry.id);
                           const entryClassName = `lead-modal__log-entry${
                             isLastGroup && isLastEntry ? ' lead-modal__log-entry--last' : ''
-                          }`;
+                          }${isSelected ? ' lead-modal__log-entry--selected' : ''}`;
                           return (
-                          <div className={entryClassName} key={entry.id}>
+                          <div
+                            className={entryClassName}
+                            key={entry.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              const targetLog = leadLogs.find((log) => String(log.id) === String(entry.id));
+                              if (targetLog) {
+                                applyLogToForm(targetLog);
+                              }
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                const targetLog = leadLogs.find((log) => String(log.id) === String(entry.id));
+                                if (targetLog) {
+                                  applyLogToForm(targetLog);
+                                }
+                              }
+                            }}
+                          >
                             <div className="lead-modal__log-time">
                               {entry.time}
                               {entry.isFirst ? ' (생성)' : ''}

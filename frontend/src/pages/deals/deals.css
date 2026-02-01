@@ -179,7 +179,7 @@ html[data-theme='light'] .deal-status-badge--lost {
 .deal-modal__lead-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .deal-modal__form {
@@ -302,6 +302,10 @@ html[data-theme='light'] .deal-status-badge--lost {
   width: 18px;
   height: 1px;
   background: rgba(148, 163, 184, 0.5);
+}
+
+.deal-modal__log-entry--selected .deal-modal__log-lines {
+  border: 1px solid rgba(37, 99, 235, 0.45);
 }
 
 .deal-modal__log-entry--last::after {

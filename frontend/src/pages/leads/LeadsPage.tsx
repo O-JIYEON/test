@@ -150,6 +150,7 @@ function LeadsPage() {
     message: '',
     onConfirm: null
   });
+  const [selectedLogId, setSelectedLogId] = useState(null);
   const pageSize = 10;
 
   const customerMap = useMemo(() => {
@@ -367,15 +368,30 @@ function LeadsPage() {
     setFormStatus('');
     setFormErrorMessage('');
     setIsModalOpen(true);
+    setSelectedLogId(null);
     loadActivityLogs();
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setSelectedLogId(null);
   };
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const applyLogToForm = (log) => {
+    if (!log) {
+      return;
+    }
+    setSelectedLogId(log.id ?? null);
+    setFormData((prev) => ({
+      ...prev,
+      customer_owner: log.sales_owner ?? prev.customer_owner ?? '',
+      next_action_date: formatDate(log.next_action_date) || '',
+      next_action_content: log.next_action_content ?? ''
+    }));
   };
 
   const leadLogs = useMemo(() => {
@@ -396,6 +412,19 @@ function LeadsPage() {
         return aId - bId;
       });
   }, [activityLogs, editingId]);
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      return;
+    }
+    if (!leadLogs.length) {
+      return;
+    }
+    if (selectedLogId) {
+      return;
+    }
+    setSelectedLogId(leadLogs[leadLogs.length - 1]?.id ?? null);
+  }, [isModalOpen, leadLogs, selectedLogId]);
 
   const showToast = (message, type = 'success') => {
     setToastType(type);
@@ -517,6 +546,7 @@ function LeadsPage() {
       await loadLeads();
       setIsModalOpen(false);
       setEditingId(null);
+      setSelectedLogId(null);
       setFormData({});
       setCustomerForm({});
       setFormStatus('');
@@ -552,6 +582,7 @@ function LeadsPage() {
       await loadLeads();
       setIsModalOpen(false);
       setEditingId(null);
+      setSelectedLogId(null);
       setFormData({});
       setFormStatus('');
       setFormErrorMessage('');
@@ -930,6 +961,7 @@ function LeadsPage() {
         contactDetailFields={contactDetailFields}
         leadFields={leadFields}
         leadLogs={leadLogs}
+        selectedLogId={selectedLogId}
         formStatus={formStatus}
         formatDate={formatDate}
         formatDateTime={formatDateTime}
@@ -944,6 +976,7 @@ function LeadsPage() {
         handleContactInput={handleContactInput}
         handleContactSelect={handleContactSelect}
         handleChange={handleChange}
+        applyLogToForm={applyLogToForm}
         handleDelete={handleDelete}
       />
       <ConfirmDialog

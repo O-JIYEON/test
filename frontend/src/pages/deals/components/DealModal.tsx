@@ -15,6 +15,7 @@ type DealModalProps = {
   dealFields: Array<any>;
   leads: Array<any>;
   dealLogs: Array<any>;
+  selectedLogId: string | number | null;
   formStatus: string;
   errorMessage: string | null;
   closeModal: () => void;
@@ -40,6 +41,7 @@ function DealModal({
   dealFields,
   leads,
   dealLogs,
+  selectedLogId,
   formStatus,
   errorMessage,
   closeModal,
@@ -363,9 +365,10 @@ function DealModal({
                         {group.items.map((entry, entryIndex) => {
                           const isLastGroup = groupIndex === groupedLogs.length - 1;
                           const isLastEntry = entryIndex === group.items.length - 1;
+                          const isSelected = selectedLogId !== null && String(selectedLogId) === String(entry.id);
                           const entryClassName = `deal-modal__log-entry${
                             isLastGroup && isLastEntry ? ' deal-modal__log-entry--last' : ''
-                          }`;
+                          }${isSelected ? ' deal-modal__log-entry--selected' : ''}`;
                           return (
                           <div
                             className={entryClassName}

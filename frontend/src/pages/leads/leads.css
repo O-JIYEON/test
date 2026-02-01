@@ -111,7 +111,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  cursor: default;
+  cursor: pointer;
 }
 
 .lead-modal__log-entry::before {
@@ -122,6 +122,11 @@
   width: 18px;
   height: 1px;
   background: rgba(148, 163, 184, 0.5);
+}
+
+.lead-modal__log-entry--selected .lead-modal__log-lines {
+  border: 1px solid rgba(37, 99, 235, 0.45);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
 }
 
 .lead-modal__log-entry--last::after {
@@ -211,7 +216,7 @@
 }
 
 .lead-form__grid {
-  gap: 28px;
+  gap: 20px;
 }
 
 .lead-form .project-form__field {

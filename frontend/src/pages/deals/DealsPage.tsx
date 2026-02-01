@@ -197,6 +197,7 @@ function DealsPage() {
     message: '',
     onConfirm: null
   });
+  const [selectedLogId, setSelectedLogId] = useState(null);
   const pageSize = 10;
 
   const lookupOptions = useMemo(() => {
@@ -357,6 +358,7 @@ function DealsPage() {
 
   const openEditModal = (deal) => {
     setEditingId(deal.id);
+    setSelectedLogId(null);
     const formattedExpectedAmount = formatAmount(deal.expected_amount);
     setFormData({
       lead_id: deal.lead_id ?? '',
@@ -379,6 +381,7 @@ function DealsPage() {
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setSelectedLogId(null);
   };
 
   const openLeadModal = (lead) => {
@@ -396,6 +399,7 @@ function DealsPage() {
   };
 
   const applyLogToForm = (log) => {
+    setSelectedLogId(log?.id ?? null);
     setFormData((prev) => ({
       ...prev,
       project_name: log.project_name ?? prev.project_name ?? '',
@@ -424,6 +428,7 @@ function DealsPage() {
       await loadActivityLogs();
       setIsModalOpen(false);
       setEditingId(null);
+      setSelectedLogId(null);
       setFormData({});
       setFormStatus('');
       setErrorMessage('');
@@ -454,6 +459,7 @@ function DealsPage() {
       await loadDeals();
       setIsModalOpen(false);
       setEditingId(null);
+      setSelectedLogId(null);
       setFormData({});
       setFormStatus('');
       setErrorMessage('');
@@ -524,6 +530,19 @@ function DealsPage() {
         return aId - bId;
       });
   }, [activityLogs, editingId]);
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      return;
+    }
+    if (!dealLogs.length) {
+      return;
+    }
+    if (selectedLogId) {
+      return;
+    }
+    setSelectedLogId(dealLogs[dealLogs.length - 1]?.id ?? null);
+  }, [isModalOpen, dealLogs, selectedLogId]);
 
   const dealStatusSummary = useMemo(() => {
     return enrichedDeals.reduce(
@@ -860,6 +879,7 @@ function DealsPage() {
         dealFields={dealFields}
         leads={leads}
         dealLogs={dealLogs}
+        selectedLogId={selectedLogId}
         formStatus={formStatus}
         errorMessage={errorMessage}
         closeModal={closeModal}
