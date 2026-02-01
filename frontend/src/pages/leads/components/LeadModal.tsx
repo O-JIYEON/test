@@ -450,23 +450,22 @@ function LeadModal({
           </div>
           {showLogPanel && (
             <div className="lead-modal__logs">
-              <div className="lead-modal__logs-header">
-                <h4 className="lead-modal__logs-title">활동기록</h4>
-                <span className="help-badge" aria-label="도움말">
-                  ?
-                  <span className="help-badge__tooltip">최신 기록은 하단에 표시됩니다.</span>
-                </span>
-              </div>
               {groupedLogs.length === 0 ? (
                 <p className="table__status">기록이 없습니다.</p>
               ) : (
                 <div className="lead-modal__logs-list" ref={logsListRef}>
-                  {groupedLogs.map((group) => (
+                  {groupedLogs.map((group, groupIndex) => (
                     <div className="lead-modal__log-group" key={group.date}>
                       <div className="lead-modal__log-date-label">{group.date}</div>
                       <div className="lead-modal__log-group-body">
-                        {group.items.map((entry) => (
-                          <div className="lead-modal__log-entry" key={entry.id}>
+                        {group.items.map((entry, entryIndex) => {
+                          const isLastGroup = groupIndex === groupedLogs.length - 1;
+                          const isLastEntry = entryIndex === group.items.length - 1;
+                          const entryClassName = `lead-modal__log-entry${
+                            isLastGroup && isLastEntry ? ' lead-modal__log-entry--last' : ''
+                          }`;
+                          return (
+                          <div className={entryClassName} key={entry.id}>
                             <div className="lead-modal__log-time">
                               {entry.time}
                               {entry.isFirst ? ' (생성)' : ''}
@@ -480,7 +479,8 @@ function LeadModal({
                               ))}
                             </div>
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     </div>
                   ))}

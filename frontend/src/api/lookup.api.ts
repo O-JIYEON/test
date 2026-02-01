@@ -13,7 +13,7 @@ export const updateLookupCategory = (id, payload) =>
   request(`${endpoints.lookupCategories}/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload)
-  });
+  }); 
 
 export const deleteLookupCategory = (id) =>
   request(`${endpoints.lookupCategories}/${id}`, { method: 'DELETE' });

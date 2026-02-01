@@ -327,13 +327,19 @@ function DealModal({
                 <p className="table__status">기록이 없습니다.</p>
               ) : (
                 <div className="deal-modal__logs-list" ref={logsListRef}>
-                  {groupedLogs.map((group) => (
+                  {groupedLogs.map((group, groupIndex) => (
                     <div className="deal-modal__log-group" key={group.date}>
                       <div className="deal-modal__log-date-label">{group.date}</div>
                       <div className="deal-modal__log-group-body">
-                        {group.items.map((entry) => (
+                        {group.items.map((entry, entryIndex) => {
+                          const isLastGroup = groupIndex === groupedLogs.length - 1;
+                          const isLastEntry = entryIndex === group.items.length - 1;
+                          const entryClassName = `deal-modal__log-entry${
+                            isLastGroup && isLastEntry ? ' deal-modal__log-entry--last' : ''
+                          }`;
+                          return (
                           <div
-                            className="deal-modal__log-entry"
+                            className={entryClassName}
                             key={entry.id}
                             role="button"
                             tabIndex={0}
@@ -367,7 +373,8 @@ function DealModal({
                                 ))}
                             </div>
                           </div>
-                        ))}
+                        );
+                        })}
                       </div>
                     </div>
                   ))}

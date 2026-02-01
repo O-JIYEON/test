@@ -103,7 +103,7 @@
 
 .lead-modal__log-entry {
   position: relative;
-  margin-left: 18px;
+  padding-left: 28px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -113,11 +113,22 @@
 .lead-modal__log-entry::before {
   content: '';
   position: absolute;
-  left: -18px;
+  left: 0;
   top: 12px;
-  width: 16px;
+  width: 18px;
   height: 1px;
   background: rgba(148, 163, 184, 0.5);
+}
+
+.lead-modal__log-entry--last::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 12px;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-slate-100);
+  pointer-events: none;
 }
 
 .lead-modal__log-time {
@@ -415,6 +426,10 @@ html[data-theme='dark'] .lead-modal__logs {
 html[data-theme='dark'] .lead-modal__log-group::before,
 html[data-theme='dark'] .lead-modal__log-entry::before {
   background: rgba(148, 163, 184, 0.25);
+}
+
+html[data-theme='dark'] .lead-modal__log-entry--last::after {
+  background: rgba(15, 23, 42, 0.6);
 }
 
 html[data-theme='dark'] .lead-modal__log-lines {
