@@ -239,7 +239,7 @@
 .lead-form .project-form__field input,
 .lead-form .project-form__field textarea,
 .lead-form .project-form__field select {
-  background: var(--color-slate-800);
+  background-color: var(--color-slate-800);
   border-color: rgba(148, 163, 184, 0.55);
   font-size: 1rem;
 }
@@ -484,7 +484,7 @@ html[data-theme='light'] .lead-form .project-form__field span {
 html[data-theme='light'] .lead-form .project-form__field input,
 html[data-theme='light'] .lead-form .project-form__field textarea,
 html[data-theme='light'] .lead-form .project-form__field select {
-  background: var(--color-white);
+  background-color: var(--color-white);
   border-color: rgba(148, 163, 184, 0.45);
   color: var(--color-slate-900);
 }

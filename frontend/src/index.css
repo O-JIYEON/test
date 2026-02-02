@@ -525,8 +525,8 @@ html[data-theme='light'] .lead-status-summary__value--won {
 }
 
 .project-form__field--has-clear select {
-  padding-right: 64px;
-  background-position: right 40px center;
+  padding-right: 76px;
+  background-position: right 14px center;
 }
 
 .select-clear {
@@ -547,6 +547,10 @@ html[data-theme='light'] .lead-status-summary__value--won {
   font-size: 0.9rem;
   line-height: 1;
   z-index: 3;
+}
+
+.project-form__field--has-clear .select-clear {
+  right: 40px;
 }
 
 .select-clear:hover {
@@ -764,6 +768,10 @@ html[data-theme='light'] .project-form__field select {
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 12px;
+}
+
+html[data-theme='dark'] .project-form__field select {
+  background-image: url('./assets/icon/chevronDownLight.svg');
 }
 
 html[data-theme='light'] .project-form input[type='date'],
