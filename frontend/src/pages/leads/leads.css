@@ -34,7 +34,7 @@
 
 .lead-modal__body {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) 340px;
+  grid-template-columns: minmax(0, 1.6fr) 380px;
   gap: 20px;
   align-items: start;
   min-height: 0;

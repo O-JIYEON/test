@@ -162,7 +162,7 @@ html[data-theme='light'] .deal-status-badge--lost {
 }
 
 .deal-modal__main.deal-modal__body--double {
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: 1.2fr 1.5fr;
 }
 
 .deal-modal__main.deal-modal__body--single {
