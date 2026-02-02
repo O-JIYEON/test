@@ -131,7 +131,7 @@
 
 .lead-modal__log-entry--selected .lead-modal__log-lines {
   border: 1px solid rgba(37, 99, 235, 0.45);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+  /* box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); */
 }
 
 .lead-modal__log-entry--last::after {

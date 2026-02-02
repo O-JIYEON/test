@@ -243,7 +243,7 @@ html[data-theme='light'] .lead-status-summary__value--won {
 
 .project-form__field select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23e2e8f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url('./assets/icon/chevronDown.svg');
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 12px;
@@ -321,6 +321,18 @@ html[data-theme='light'] .lead-status-summary__value--won {
 .project-form__field input[type='date'] {
   color: var(--color-slate-400);
   color-scheme: dark;
+  appearance: none;
+  background-image: url('./assets/icon/calendarLight.svg');
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 44px;
+}
+
+.project-form input[type='date']::-webkit-calendar-picker-indicator,
+.project-form__field input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: block;
 }
 
 .project-form input[type='date'][data-filled='true'],
@@ -514,11 +526,12 @@ html[data-theme='light'] .lead-status-summary__value--won {
 
 .project-form__field--has-clear select {
   padding-right: 64px;
+  background-position: right 40px center;
 }
 
 .select-clear {
   position: absolute;
-  right: 34px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
   width: 20px;
@@ -747,7 +760,7 @@ html[data-theme='light'] .project-form__field select {
 }
 
 html[data-theme='light'] .project-form__field select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url('./assets/icon/chevronDown.svg');
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 12px;
@@ -757,6 +770,10 @@ html[data-theme='light'] .project-form input[type='date'],
 html[data-theme='light'] .project-form__field input[type='date'] {
   color: var(--color-slate-900);
   color-scheme: light;
+  background-image: url('./assets/icon/calendar.svg');
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
 }
 
 html[data-theme='light'] .project-form input[type='date']::-webkit-datetime-edit,
