@@ -35,13 +35,17 @@
 .lead-modal__body {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) 380px;
-  gap: 20px;
-  align-items: start;
+  /* gap: 20px; */
+  align-items: stretch;
   min-height: 0;
+  overflow: hidden;
 }
 
 .lead-modal__form {
-  padding: 24px 4px 24px 24px;
+  padding: 24px;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .lead-modal__logs {
@@ -51,6 +55,7 @@
   flex-direction: column;
   min-height: 0;
   align-self: stretch;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -170,7 +175,7 @@
 
 .lead-modal__log-line-value {
   color: var(--color-slate-900);
-  font-weight: 600;
+  /* font-weight: 600; */
 }
 
 .help-badge {

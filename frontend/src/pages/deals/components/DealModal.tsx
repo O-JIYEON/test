@@ -137,6 +137,7 @@ function DealModal({
   const logsListRef = useRef<HTMLDivElement | null>(null);
   const logsPanelRef = useRef<HTMLDivElement | null>(null);
   const mainPanelRef = useRef<HTMLDivElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!showLogPanel) {
@@ -156,14 +157,16 @@ function DealModal({
       return;
     }
     const mainPanel = mainPanelRef.current;
+    const bodyPanel = bodyRef.current;
     const logsPanel = logsPanelRef.current;
-    if (!mainPanel || !logsPanel) {
+    if (!mainPanel || !logsPanel || !bodyPanel) {
       return;
     }
     const updateHeight = () => {
-      const nextHeight = mainPanel.offsetHeight;
+      const nextHeight = bodyPanel.clientHeight;
       if (nextHeight) {
         logsPanel.style.maxHeight = `${nextHeight}px`;
+        logsPanel.style.height = `${nextHeight}px`;
       }
     };
     updateHeight();
@@ -193,8 +196,11 @@ function DealModal({
           </div>
         </div>
         <form className="project-form" onSubmit={handleSubmit}>
-          <div className={`modal__body deal-modal__body ${showLogPanel ? 'deal-modal__body--with-logs' : ''}`}>
-          <div className={`deal-modal__main ${modalLayoutClass}`} ref={mainPanelRef}>
+          <div
+            className={`modal__body deal-modal__body ${showLogPanel ? 'deal-modal__body--with-logs' : ''}`}
+            ref={bodyRef}
+          >
+            <div className={`deal-modal__main ${modalLayoutClass}`} ref={mainPanelRef}>
             {showLeadPanel && (
               <div className="deal-modal__lead">
                 {dealLeadInfo ? (

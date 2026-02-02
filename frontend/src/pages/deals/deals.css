@@ -132,9 +132,10 @@ html[data-theme='light'] .deal-status-badge--lost {
 }
 .deal-modal__body {
   display: grid;
-  gap: 20px;
-  align-items: start;
+  /* gap: 20px; */
+  align-items: stretch;
   min-height: 0;
+  overflow: hidden;
 }
 
 .deal-modal__body--with-logs {
@@ -155,6 +156,8 @@ html[data-theme='light'] .deal-status-badge--lost {
   gap: 20px;
   align-items: stretch;
   min-height: 0;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .deal-modal__main.deal-modal__body--triple {
@@ -184,7 +187,7 @@ html[data-theme='light'] .deal-status-badge--lost {
 
 .deal-modal__form {
   margin-top: 0;
-  padding: 24px 4px 24px 2px;
+  padding: 24px 24px 24px 2px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -196,7 +199,8 @@ html[data-theme='light'] .deal-status-badge--lost {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  align-self: flex-start;
+  align-self: stretch;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -255,6 +259,8 @@ html[data-theme='light'] .deal-status-badge--lost {
   flex-direction: column;
   gap: 20px;
   padding: 24px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
