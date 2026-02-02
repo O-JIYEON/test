@@ -365,7 +365,13 @@ function DealModal({
               ) : (
                 <div className="deal-modal__logs-list" ref={logsListRef}>
                   {groupedLogs.map((group, groupIndex) => (
-                    <div className="deal-modal__log-group" key={group.date}>
+                    <div
+                      className={`deal-modal__log-group${
+                        groupIndex === groupedLogs.length - 1 ? ' deal-modal__log-group--last' : ''
+                      }`}
+                      data-last={groupIndex === groupedLogs.length - 1 ? 'true' : 'false'}
+                      key={group.date}
+                    >
                       <div className="deal-modal__log-date-label">{group.date}</div>
                       <div className="deal-modal__log-group-body">
                         {group.items.map((entry, entryIndex) => {

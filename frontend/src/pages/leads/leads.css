@@ -57,6 +57,7 @@
   align-self: stretch;
   height: 100%;
   overflow: hidden;
+  border-left: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .lead-modal__logs-header {
@@ -65,6 +66,7 @@
   gap: 8px;
   justify-content: space-between;
   padding: 24px 24px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .lead-modal__logs-title {
@@ -81,6 +83,8 @@
   overflow-y: auto;
   min-height: 0;
   flex: 1;
+  background: var(--color-slate-100);
+  --lead-log-list-bg: var(--color-slate-100);
 }
 
 .lead-modal__log-group {
@@ -134,14 +138,14 @@
   /* box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12); */
 }
 
-.lead-modal__log-entry--last::after {
+.lead-modal__log-group--last .lead-modal__log-entry--last::after {
   content: '';
   position: absolute;
-  left: -1px;
-  top: 12px;
-  bottom: 0;
-  width: 3px;
-  background: var(--color-slate-100);
+  left: -3px;
+  top: 13px;
+  width: 6px;
+  height: calc(100% + 48px);
+  background: var(--lead-log-list-bg);
   pointer-events: none;
 }
 
@@ -421,6 +425,7 @@ html[data-theme='light'] .lead-customer-select__empty {
 
 html[data-theme='light'] .lead-modal__logs {
   background: var(--color-slate-100);
+  border: none;
 }
 
 html[data-theme='light'] .help-badge {
@@ -434,7 +439,13 @@ html[data-theme='light'] .help-badge__tooltip {
 }
 
 html[data-theme='dark'] .lead-modal__logs {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(8, 12, 20, 0.9);
+}
+
+html[data-theme='dark'] .lead-modal__logs-list {
+  background: #111a2b;
+  --lead-log-list-bg: #111a2b;
+  --lead-log-mask-bg: #111a2b;
 }
 
 html[data-theme='dark'] .lead-modal__log-group::before,
@@ -442,13 +453,14 @@ html[data-theme='dark'] .lead-modal__log-entry::before {
   background: rgba(148, 163, 184, 0.25);
 }
 
-html[data-theme='dark'] .lead-modal__log-entry--last::after {
-  background: rgba(15, 23, 42, 0.6);
+html[data-theme='dark'] .lead-modal__log-group--last .lead-modal__log-entry--last::after {
+  background: var(--lead-log-mask-bg);
 }
 
 html[data-theme='dark'] .lead-modal__log-lines {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(30, 41, 59, 0.55);
   box-shadow: 0 10px 20px rgba(2, 6, 23, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 html[data-theme='dark'] .lead-modal__log-date-label,
